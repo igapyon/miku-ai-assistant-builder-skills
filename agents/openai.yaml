@@ -1,0 +1,4 @@
+interface:
+  display_name: "Miku M365 Agent Builder"
+  short_description: "Microsoft 365 Agent Builder向け入力データを作成"
+  default_prompt: "Use $igapyon-miku-m365-agent-builder to prepare copy-ready input data for a Microsoft 365 Copilot Agent Builder agent."
