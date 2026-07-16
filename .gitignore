@@ -1,2 +1,13 @@
 .DS_Store
-workplace/
+node_modules/
+.npm-cache/
+dist/
+bundle/
+release-assets/
+coverage/
+*.log
+npm-debug.log*
+.vscode/mcp.json
+workplace/*
+!workplace/.gitkeep
+.codex/skills/

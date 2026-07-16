@@ -1,0 +1,46 @@
+name: Build Draft Release Asset
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Git tag to build and attach to a draft release"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify tag version
+        shell: bash
+        env:
+          TAG_NAME: ${{ github.event.inputs.tag_name || github.ref_name }}
+        run: |
+          set -euo pipefail
+          version="${TAG_NAME#v}"
+          package_version="$(node -p "require('./package.json').version")"
+          test "${version}" = "${package_version}"
+      - name: Build and verify exact release artifact
+        run: npm run build
+      - name: Upload verified draft release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
+          files: |
+            bundle/*.zip
+            bundle/*.zip.sha256
+          draft: true
+          prerelease: false

@@ -1,0 +1,78 @@
+# miku-text-bundle連携
+
+## 位置づけ
+
+雑多な入力フォルダからKnowledge sourcesの中間Markdownを生成するときは、`igapyon-miku-text-bundle`を使用する。上流`miku-text-bundle` v1.5.0以降の`knowledge-source`モードを前提にする。
+
+`miku-text-bundle`はテキスト系ファイルの収集、決定的な分割、出典追跡、診断を担当する。本スキルはAgent Builderへの適合性判断、入力範囲の選定、Instructions作成、登録候補の確認、配備用フォルダの構成を担当する。
+
+## 必須条件
+
+- `igapyon-miku-text-bundle`の手順に従う。
+- 実行前にランタイムの`--help`または`--version`を確認する。
+- `--mode knowledge-source`が利用できるv1.5.0以降を使用する。
+- インストール済みランタイムが未対応なら、handoffモードで代用せず更新が必要と報告する。
+- 入力ディレクトリ、出力ディレクトリ、文字コード、除外、サイズ上限を確認する。
+
+## 標準実行
+
+最初にdry-runで収集件数、スキップ件数、無視件数、推定Part数を確認する。
+
+```text
+miku-text-bundle \
+  --input <inputDir> \
+  --output <outputDir> \
+  --mode knowledge-source \
+  --dry-run
+```
+
+問題がなければ`--dry-run`を外して実行する。必要に応じて次を指定する。
+
+- `--filename-prefix <prefix>`
+- `--max-chars <number>`
+- `--max-input-file-bytes <number>`
+- `--encoding utf-8|shift_jis`
+- `--encoding-extension ".ext=shift_jis"`
+- `--add-exclude-extension ".ext"`
+- `--add-exclude-directory "dir"`
+- `--verbose`
+
+Agent Builder側の制限が重要な場合は、既定値をそのまま安全とみなさず、最新仕様と実際の生成ファイルを確認して`--max-chars`を調整する。
+
+## 成果物の役割
+
+デフォルトprefixでは次が生成される。
+
+```text
+knowledge-001.md
+knowledge-002.md
+knowledge-index.md
+```
+
+- `knowledge-NNN.md`: DOCX変換へ渡す中間成果物。元相対パス、必要に応じたチャンク番号、元行範囲、元本文を含む。
+- `knowledge-index.md`: 管理用。実行設定、生成ファイル、元ファイル対応、スキップ理由、警告、`TODO` / `FIXME` / `XXX` marker、旧生成物候補を含む。
+
+番号付きMarkdownだけを`miku-md2docx`へ渡す。管理用indexはDOCX化せず、Agent Builderへ登録しない。最終登録候補は変換後の番号付きDOCXとする。
+
+## 非テキスト資料
+
+`miku-text-bundle`は`.docx`、`.xlsx`、`.pptx`、`.pdf`、画像などを既定で除外する。必要な資料は、内容とレイアウトを検証できる適切な変換手段で先にテキスト化し、その中間入力をknowledge-sourceモードへ渡す。拡張子除外を解除してバイナリを無理に読み込ませない。
+
+## 実行後の確認
+
+- 番号付きMarkdownの件数と実サイズ
+- indexに記録された収集、スキップ、警告、ignoredの概要
+- 元ファイルと生成チャンクの対応
+- 古い生成物候補の残存
+- 機密情報、個人情報、秘密情報の混入
+- 旧版、重複、矛盾する資料の混在
+- DOCXへ変換する番号付きMarkdownと管理用indexの分離
+- 元相対パスとファイル境界の保持
+
+## 上流仕様
+
+- [miku-text-bundle v1.5.1](https://github.com/igapyon/miku-text-bundle/releases/tag/v1.5.1)
+- [v1.5.0 release notes](https://github.com/igapyon/miku-text-bundle/blob/v1.5.1/docs/release-notes-v1.5.0.md)
+- [README](https://github.com/igapyon/miku-text-bundle/blob/v1.5.1/README.md)
+
+この資料は2026-07-17時点の上流v1.5.1を基準にする。実行時はインストール済みランタイムの`--help`をCLI契約として優先する。
