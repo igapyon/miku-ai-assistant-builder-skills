@@ -1,6 +1,8 @@
-# miku-text-bundleへのKnowledge sourceモード追加依頼
+# miku-text-bundleへのKnowledge sourceモード追加依頼（実装済み）
 
-`miku-text-bundle`に、Microsoft 365 Copilot Agent BuilderのKnowledge sourcesへ登録するMarkdownを生成するためのモード追加をお願いしたいです。
+> Status: `miku-text-bundle` v1.5.0で実装済み。これは導入時の要求と受け入れ条件を残す履歴資料であり、新規依頼として送付しない。現在の利用方法は[連携資料](03-miku-text-bundle.md)を参照する。
+
+この文書は、Microsoft 365 Copilot Agent BuilderのKnowledge sourcesへ登録するMarkdown生成モードについて、上流へ提示した要求を記録する。
 
 ## 目次
 

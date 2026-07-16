@@ -1,0 +1,19 @@
+{
+ "title": "Igapyon Miku M365 Agent Builder Skill Index",
+ "generator": "miku-indexgen",
+ "generation": {"schemaVersion":1,"inputPath":".","markdownOutput":false,"recursive":true,"includeExtensions":["md","json","yaml"],"inputEncoding":"utf8","outputEncoding":"utf8","title":"Igapyon Miku M365 Agent Builder Skill Index","includeGeneratorMetadata":true},
+ "basePath": ".",
+ "files": [
+  {"name":"SKILL.md","path":"SKILL.md","ext":"md","dir":"","size":7967,"description":"Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備し、雑多な既存フォルダを Agent Builder 配備用フォルダへ変換するスキル。Knowledge sourcesの中間Markdown生成には`igapyon-miku-text-bundle`、最終DOCX生成には`igapyon-miku-ms-office`の`miku-md2docx`を利用する。Copilot Studio の作成権限を持たない利用者向けの Agent Build...","summary":"Igapyon Miku M365 Agent Builder"},
+  {"name":"openai.yaml","path":"agents/openai.yaml","ext":"yaml","dir":"agents","size":342},
+  {"name":"01-input-fields.md","path":"references/instructions/01-input-fields.md","ext":"md","dir":"references/instructions","size":6640,"summary":"Microsoft 365 Copilot Agent Builderの入力項目と推奨形式"},
+  {"name":"01-principles.md","path":"references/knowledge-sources/01-principles.md","ext":"md","dir":"references/knowledge-sources","size":1808,"summary":"Knowledge sourcesの基本原則"},
+  {"name":"02-content-design.md","path":"references/knowledge-sources/02-content-design.md","ext":"md","dir":"references/knowledge-sources","size":2207,"summary":"Knowledge sourceのコンテンツ設計"},
+  {"name":"03-miku-text-bundle.md","path":"references/knowledge-sources/03-miku-text-bundle.md","ext":"md","dir":"references/knowledge-sources","size":3765,"summary":"miku-text-bundle連携"},
+  {"name":"04-upstream-request.md","path":"references/knowledge-sources/04-upstream-request.md","ext":"md","dir":"references/knowledge-sources","size":6094,"summary":"miku-text-bundleへのKnowledge sourceモード追加依頼（実装済み）"},
+  {"name":"05-miku-md2docx.md","path":"references/knowledge-sources/05-miku-md2docx.md","ext":"md","dir":"references/knowledge-sources","size":3368,"summary":"miku-md2docx連携"},
+  {"name":"01-baseline.md","path":"references/platform/01-baseline.md","ext":"md","dir":"references/platform","size":3075,"summary":"Microsoft 365 Copilot Agent Builderの基礎情報"},
+  {"name":"02-limitations.md","path":"references/platform/02-limitations.md","ext":"md","dir":"references/platform","size":6424,"summary":"Microsoft 365 Copilot Agent Builderの制限・設計上の注意"},
+  {"name":"01-folder-conversion.md","path":"references/workflows/01-folder-conversion.md","ext":"md","dir":"references/workflows","size":3800,"summary":"雑多なフォルダの変換"}
+ ]
+}

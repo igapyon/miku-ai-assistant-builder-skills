@@ -1,0 +1,4 @@
+interface:
+  display_name: "Miku M365 Agent Builder"
+  short_description: "Agent Builder向け入力と登録用DOCXを作成"
+  default_prompt: "Use $igapyon-miku-m365-agent-builder to prepare copy-ready input data or convert an existing folder into flat upload-ready DOCX Knowledge sources using igapyon-miku-text-bundle and miku-md2docx."

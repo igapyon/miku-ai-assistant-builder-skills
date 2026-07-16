@@ -1,0 +1,22 @@
+{
+  "name": "miku-m365-agent-builder-skills",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "mikuIndex": {
+    "path": "skills/igapyon-miku-m365-agent-builder/index.json",
+    "required": true
+  },
+  "scripts": {
+    "check:index": "node scripts/verify-miku-index.mjs",
+    "test": "npm run check:index && node --test tests/skill-structure.test.mjs",
+    "verify:bundle": "node --test tests/isolated-bundle-smoke.test.mjs tests/release-bundle-contents.test.mjs",
+    "build": "npm test && npm run build:bundle:zip && npm run verify:bundle",
+    "build:bundle": "node scripts/build-skill-bundle.mjs",
+    "build:bundle:zip": "node scripts/build-skill-bundle-zip.mjs",
+    "verify:reproducible": "node scripts/check-reproducible-bundle.mjs"
+  }
+}

@@ -5,13 +5,16 @@
 このリポジトリは、Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備する Agent Skill の作業中リポジトリである。
 
 - Copilot Studio 固有のエージェント構築は対象外とする。
-- Node.js／Java CLI ランタイムには依存しない、内容中心の Agent Skill とする。
+- 実行時は`miku-text-bundle`と`miku-md2docx`のCLIランタイムを利用するワークフロー型Agent Skillとする。
 - `miku-prompt-lint-skills` を同レイヤーの姉妹ソフトとして参照する。
-- `miku-text-bundle` 連携は将来構想であり、現在の必須ランタイムとはしない。
+- `miku-text-bundle`と`miku-md2docx`は、Knowledge sources生成時に利用する上流ランタイムとする。
 
 ## 現時点で確認できる基本仕様
 
 - 利用者の要望から、Agent Builder の各入力欄へコピーできるデータを作成する。
+- 雑多な既存フォルダを棚卸しし、`miku-text-bundle --mode knowledge-source`でKnowledge sources候補を生成する。
+- 番号付き中間Markdownを`miku-md2docx`でDOCX化し、フラットな`upload/`を最終登録対象にする。
+- 元リポジトリ基準の相対パスをDOCX本文に保持し、DOCX間の相対リンクには依存しない。
 - 基本の出力順は次のとおりとする。
   1. Name
   2. Description
@@ -29,15 +32,19 @@
 
 ## 設計 TODO
 
-- [ ] `SKILL.md` の `Workflow` を具体化する。
+- [x] `SKILL.md` の基本 `Workflow` を具体化する。
 - [ ] 利用者から最初に聞き取る情報を定義する。
 - [ ] 情報不足時に確認する項目と質問順序を定義する。
 - [ ] Agent Builder への適合性を判定するタイミングと判断基準を定義する。
 - [ ] 適合度が低い要望を、Agent Builder 向けの実現可能な用途へ調整する手順を定義する。
 - [ ] 既存エージェントの新規作成だけでなく、修正・改善も対象に含めるか決める。
-- [ ] `SKILL.md` の `Output` を具体化する。
-- [ ] 最終成果物を単一のコピー用 Markdown として返すか決める。
-- [ ] 未確定事項、前提、制約、適合性上の注意を出力へどう表現するか決める。
+- [x] `SKILL.md` の基本 `Output` を具体化する。
+- [x] 新規設計では単一のコピー用Markdown、フォルダ変換では配備用フォルダを返す方針を決める。
+- [x] フォルダ変換時は未確定事項を`items-to-confirm.md`へ記録する方針を決める。
+- [x] 雑多なフォルダの棚卸しと`miku-text-bundle` knowledge-sourceモードの連携を定義する。
+- [x] `miku-md2docx`による番号付きMarkdownから最終DOCXへの変換を定義する。
+- [x] 登録用`upload/`をDOCXだけのフラット構成にする。
+- [x] ソースコードの相対パスとファイル境界をDOCX本文に保持する方針を定義する。
 - [ ] Knowledge sources 候補の評価方法を定義する。
 - [ ] Capabilities の候補提示と利用可否確認の扱いを定義する。
 - [ ] 完成条件とセルフチェック項目を定義する。
@@ -45,17 +52,17 @@
 
 ## リポジトリ整備 TODO
 
-- [ ] 正本のスキルをリポジトリ直下に置くか、`skills/igapyon-miku-m365-agent-builder/` 配下へ整理するか決める。
-- [ ] 姉妹ソフト `miku-prompt-lint-skills` の構成から採用する要素と採用しない要素を整理する。
-- [ ] `README.md` を作成し、目的、利用方法、正本の配置、開発方法を記載する。
+- [x] 正本のスキルを `skills/igapyon-miku-m365-agent-builder/` 配下へ整理する。
+- [x] 姉妹ソフト `miku-prompt-lint-skills` を参照し、content-only 型の正本配置、決定的 ZIP、SHA-256、CI、draft release、配布テストを採用する。
+- [x] `README.md` を作成し、目的、正本の配置、ビルド、GitHub Actions を記載する。
 - [ ] `docs/miku-soft-reference.md` を作成するか検討する。
-- [ ] `.gitignore` と `workplace/.gitkeep` を整備する。
-- [ ] 配布用バンドルの構成と生成方法を決める。
-- [ ] `index.json` を生成・同梱する方針を決める。
-- [ ] スキル構造、参照リンク、配布内容を検証するテストを用意する。
+- [x] `.gitignore` と `workplace/.gitkeep` を整備する。
+- [x] 配布用バンドル、決定的 ZIP、SHA-256 の生成方法を整備する。
+- [x] `index.json` を生成し、配布 ZIP に同梱する。
+- [x] スキル構造、インストール形状、配布内容を検証するテストを用意する。
 
 ## 将来連携 TODO
 
-- [ ] `miku-text-bundle` の Knowledge source モードに関する未決事項を整理する。
-- [ ] 上流へ依頼する変更内容と受け入れ条件を確定する。
-- [ ] 上流機能が利用可能になった後、このスキルからの案内・連携方法を設計する。
+- [x] `miku-text-bundle` v1.5.0で追加されたKnowledge sourceモードの契約を整理する。
+- [x] 上流へ依頼した変更内容と受け入れ条件が実装済みであることを確認する。
+- [x] `miku-text-bundle` v1.5.0以降を利用する案内・連携方法を設計する。
