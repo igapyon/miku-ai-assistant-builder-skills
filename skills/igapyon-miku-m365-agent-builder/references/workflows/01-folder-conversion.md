@@ -20,7 +20,7 @@
 2. ファイルの相対パス、形式、サイズ、更新日時、推定テーマ、版、重複候補、読取可否を棚卸しする。
 3. `Include`、`Exclude`、`Convert first`、`Confirm`へ分類する。
 4. Office文書、PDF、画像など、`miku-text-bundle`が既定で除外する必要資料は、適切な変換手段でテキスト化して中間入力へ置く。
-5. `igapyon-miku-text-bundle`を`--mode knowledge-source`と`--dry-run`で実行し、対象範囲と診断を確認する。
+5. 同梱`miku-text-bundle`を`--mode knowledge-source`と`--dry-run`で実行し、対象範囲と診断を確認する。
 6. dry-runに問題がなければ本実行し、番号付きMarkdownを`work/knowledge-markdown/`へ、管理用indexを`work/`へ生成する。
 7. 番号付きMarkdownだけを`miku-md2docx`で一対一変換し、最終DOCXを`upload/`直下へフラットに置く。
 8. DOCX本文に元相対パスとファイル境界が保持され、マシン固有の絶対パスやDOCX間の相対リンクへ依存していないことを確認する。
