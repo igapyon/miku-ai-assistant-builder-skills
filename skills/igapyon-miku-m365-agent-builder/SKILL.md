@@ -1,6 +1,6 @@
 ---
 name: igapyon-miku-m365-agent-builder
-description: Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備し、雑多な既存フォルダを Agent Builder 配備用フォルダへ変換するスキル。Knowledge sourcesの中間Markdown生成には`igapyon-miku-text-bundle`、最終DOCX生成には`igapyon-miku-ms-office`の`miku-md2docx`を利用する。Copilot Studio の作成権限を持たない利用者向けの Agent Builder が対象。`igapyon-miku-m365-agent-builder`または`miku-m365-agent-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換が依頼されたときに使用する。Copilot Studio 固有のエージェント作成には使用しない。
+description: Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備し、雑多な既存フォルダを Agent Builder 配備用フォルダへ変換するスキル。Knowledge sourcesの中間Markdown生成には同梱`miku-text-bundle`、最終DOCX生成には同梱`miku-md2docx`を利用する。Copilot Studio の作成権限を持たない利用者向けの Agent Builder が対象。`igapyon-miku-m365-agent-builder`または`miku-m365-agent-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換が依頼されたときに使用する。Copilot Studio 固有のエージェント作成には使用しない。
 ---
 
 # Igapyon Miku M365 Agent Builder
@@ -30,8 +30,10 @@ Microsoft 365 Copilot の Agent Builder 向け入力データを作成する。
 - 入力欄と推奨形式を作るときは、[入力項目と推奨形式](references/instructions/01-input-fields.md)を読む。
 - Knowledge sourcesを設計するときは、[基本原則](references/knowledge-sources/01-principles.md)と[コンテンツ設計](references/knowledge-sources/02-content-design.md)を読む。
 - 既存フォルダを変換するときは、[雑多なフォルダの変換](references/workflows/01-folder-conversion.md)を読む。
-- Knowledge sourcesを生成するときは、[miku-text-bundle連携](references/knowledge-sources/03-miku-text-bundle.md)を読み、`igapyon-miku-text-bundle`を使用する。
-- 登録用DOCXを生成するときは、[miku-md2docx連携](references/knowledge-sources/05-miku-md2docx.md)を読み、`igapyon-miku-ms-office`の`miku-md2docx`を使用する。
+- Knowledge sourcesを生成するときは、[miku-text-bundle連携](references/knowledge-sources/03-miku-text-bundle.md)を読み、同梱`miku-text-bundle`を使用する。
+- 登録用DOCXを生成するときは、[miku-md2docx連携](references/knowledge-sources/05-miku-md2docx.md)を読み、同梱`miku-md2docx`を使用する。
+- ランタイムの版、選択順、SHA-256を確認するときは、[同梱ランタイム](references/runtime-artifacts.md)を読む。
+- バックエンド指定がなければNode.js版を使用する。Java版は明示指定時、またはNode.js版が利用できない場合のフォールバックとする。
 - knowledge-sourceモード導入時の判断経緯を確認するときだけ、[Knowledge sourceモード追加依頼（実装済み）](references/knowledge-sources/04-upstream-request.md)を読む。
 
 ## Workflow
@@ -39,7 +41,7 @@ Microsoft 365 Copilot の Agent Builder 向け入力データを作成する。
 1. 利用者の目的、想定利用者、代表的な質問、入力元、出力先を確認する。不明点は推測で確定せず、作業を進められる範囲では仮定として記録する。
 2. [制限・設計上の注意](references/platform/02-limitations.md)を使い、Agent Builderへの適合性を判定する。適合度が低い要求は「案内」「情報整理」「判断材料の提示」「下書き作成」へ調整する。
 3. 入力が既存フォルダの場合は、原本を変更せずに棚卸しする。Knowledge sourcesへ含める範囲、除外、文字コード、単一ファイル上限、分割目安を決める。
-4. `igapyon-miku-text-bundle`のランタイムが`--mode knowledge-source`をサポートすることを`--help`または`--version`で確認し、dry-run後にknowledge-sourceモードを実行する。未対応なら旧handoff出力で代用せず、v1.5.0以降への更新が必要と報告する。
+4. 同梱`miku-text-bundle`ランタイムが`--mode knowledge-source`をサポートすることを`--help`または`--version`で確認し、dry-run後にknowledge-sourceモードを実行する。未対応なら旧handoff出力で代用せず、v1.5.0以降への更新が必要と報告する。
 5. 生成された番号付きMarkdownを中間成果物として`work/knowledge-markdown/`へ置く。`<prefix>-index.md`は対応関係、スキップ、警告、旧生成物候補を確認する管理用ファイルとして`work/`へ置き、変換・登録しない。
 6. 番号付きMarkdownを一対一で`miku-md2docx`へ渡し、同じbasenameのDOCXをフラットな`upload/`へ生成する。`agent-builder-input.md`、`items-to-confirm.md`、管理用indexはDOCX化しない。
 7. 元リポジトリ基準の相対パスとファイル境界がDOCX本文に残ることを確認する。Knowledge sources間の相対リンクには依存せず、外部参照には確認済みの絶対URLを使う。

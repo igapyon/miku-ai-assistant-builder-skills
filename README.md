@@ -10,11 +10,18 @@ Copilot Studio 固有のエージェント構築ではなく、Microsoft 365 Cop
 
 - `skills/igapyon-miku-m365-agent-builder/`
 
-このスキルは CLI ランタイムを持たない content-only 型です。
+このスキルは、Knowledge source生成用の`miku-text-bundle`とDOCX生成用の
+`miku-md2docx`について、Node.js版とJava版のCLIランタイムを同梱する
+CLI-backed型です。
+
+同梱ランタイムは次のとおりです。
+
+- `miku-text-bundle` Node.js v1.5.1 / Java v1.5.0
+- `miku-md2docx` Node.js v0.9.2 / Java v0.9.1
 
 ## Build
 
-ローカルビルドには Node.js 24 と `zip` / `unzip` コマンドが必要です。
+ローカルビルドには Node.js 24、Java 17以降、`zip` / `unzip` コマンドが必要です。
 
 ```bash
 npm test

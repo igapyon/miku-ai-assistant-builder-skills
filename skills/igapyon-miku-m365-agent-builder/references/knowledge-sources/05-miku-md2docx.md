@@ -2,18 +2,26 @@
 
 ## 位置づけ
 
-`miku-text-bundle --mode knowledge-source`が生成した番号付きMarkdownを、Microsoft 365 Copilot Agent Builderへ登録するDOCXへ変換する。変換には`igapyon-miku-ms-office`の`miku-md2docx`を使用する。
+`miku-text-bundle --mode knowledge-source`が生成した番号付きMarkdownを、Microsoft 365 Copilot Agent Builderへ登録するDOCXへ変換する。変換には本スキルに同梱した`miku-md2docx`を使用する。
 
 Markdownは中間成果物、DOCXは最終登録候補とする。Markdown-to-Office変換は実験的であり、レイアウト忠実性を前提にしない。Knowledge sourceとして本文、見出し、コード、相対パスを読めることを優先する。
 
 ## ランタイム
 
-`igapyon-miku-ms-office`の手順とランタイムポリシーに従う。バックエンド指定がなければ、単一ファイルへ依存をバンドルしたNode.js CLI版`miku-md2docx-<version>.mjs`を優先する。実行にはNode.jsが必要だが、外部`node_modules`やネットワーク接続は要求しない。
+バックエンド指定がなければ、単一ファイルへ依存をバンドルしたNode.js CLI版`miku-md2docx-0.9.2.mjs`を優先する。Node.jsが利用できない場合はJava版`miku-md2docx-java-0.9.1.jar`を使用する。どちらも外部依存のダウンロードやネットワーク接続を要求しない。
 
 実行前に`--help`と`--version`でCLI契約を確認する。通常変換では入力Markdownと主出力`--out`だけを指定し、summaryなどの追加成果物を勝手に生成しない。
 
 ```text
-node <miku-md2docx-bundle.mjs> \
+node <skill-root>/runtime/miku-md2docx-0.9.2.mjs \
+  work/knowledge-markdown/knowledge-001.md \
+  --out upload/knowledge-001.docx
+```
+
+Java版を使用する場合も、入力と主出力だけを指定する。
+
+```text
+java -jar <skill-root>/runtime/miku-md2docx-java-0.9.1.jar \
   work/knowledge-markdown/knowledge-001.md \
   --out upload/knowledge-001.docx
 ```

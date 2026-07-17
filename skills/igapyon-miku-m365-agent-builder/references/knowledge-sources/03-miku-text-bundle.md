@@ -2,16 +2,16 @@
 
 ## 位置づけ
 
-雑多な入力フォルダからKnowledge sourcesの中間Markdownを生成するときは、`igapyon-miku-text-bundle`を使用する。上流`miku-text-bundle` v1.5.0以降の`knowledge-source`モードを前提にする。
+雑多な入力フォルダからKnowledge sourcesの中間Markdownを生成するときは、本スキルに同梱した`miku-text-bundle`を使用する。上流`miku-text-bundle` v1.5.0以降の`knowledge-source`モードを前提にする。
 
 `miku-text-bundle`はテキスト系ファイルの収集、決定的な分割、出典追跡、診断を担当する。本スキルはAgent Builderへの適合性判断、入力範囲の選定、Instructions作成、登録候補の確認、配備用フォルダの構成を担当する。
 
 ## 必須条件
 
-- `igapyon-miku-text-bundle`の手順に従う。
+- Node.js版v1.5.1を優先し、Node.jsが利用できない場合はJava版v1.5.0を使用する。
 - 実行前にランタイムの`--help`または`--version`を確認する。
 - `--mode knowledge-source`が利用できるv1.5.0以降を使用する。
-- インストール済みランタイムが未対応なら、handoffモードで代用せず更新が必要と報告する。
+- 同梱ランタイムが未対応なら、handoffモードで代用せず更新が必要と報告する。
 - 入力ディレクトリ、出力ディレクトリ、文字コード、除外、サイズ上限を確認する。
 
 ## 標準実行
@@ -19,7 +19,17 @@
 最初にdry-runで収集件数、スキップ件数、無視件数、推定Part数を確認する。
 
 ```text
-miku-text-bundle \
+node <skill-root>/runtime/miku-text-bundle-1.5.1.mjs \
+  --input <inputDir> \
+  --output <outputDir> \
+  --mode knowledge-source \
+  --dry-run
+```
+
+Node.jsが利用できない場合は、Java版を同じオプションで実行する。
+
+```text
+java -jar <skill-root>/runtime/miku-text-bundle-java-1.5.0.jar \
   --input <inputDir> \
   --output <outputDir> \
   --mode knowledge-source \
@@ -75,4 +85,4 @@ knowledge-index.md
 - [v1.5.0 release notes](https://github.com/igapyon/miku-text-bundle/blob/v1.5.1/docs/release-notes-v1.5.0.md)
 - [README](https://github.com/igapyon/miku-text-bundle/blob/v1.5.1/README.md)
 
-この資料は2026-07-17時点の上流v1.5.1を基準にする。実行時はインストール済みランタイムの`--help`をCLI契約として優先する。
+この資料は2026-07-17時点の上流v1.5.1を基準にする。実行時は同梱ランタイムの`--help`をCLI契約として優先する。
