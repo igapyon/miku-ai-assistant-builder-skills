@@ -23,6 +23,8 @@ node <skill-root>/runtime/miku-text-bundle-1.5.1.mjs \
   --input <inputDir> \
   --output <outputDir> \
   --mode knowledge-source \
+  --max-chars 25000000 \
+  --max-input-file-bytes 100000000 \
   --dry-run
 ```
 
@@ -33,6 +35,8 @@ java -jar <skill-root>/runtime/miku-text-bundle-java-1.5.0.jar \
   --input <inputDir> \
   --output <outputDir> \
   --mode knowledge-source \
+  --max-chars 25000000 \
+  --max-input-file-bytes 100000000 \
   --dry-run
 ```
 
@@ -47,7 +51,7 @@ java -jar <skill-root>/runtime/miku-text-bundle-java-1.5.0.jar \
 - `--add-exclude-directory "dir"`
 - `--verbose`
 
-Agent Builder側の制限が重要な場合は、既定値をそのまま安全とみなさず、最新仕様と実際の生成ファイルを確認して`--max-chars`を調整する。
+標準の分割単位は100 MB（100,000,000 bytes）とし、UTF-8の1文字を最大4 bytesとして換算した25,000,000文字を`--max-chars`へ指定する。`--max-input-file-bytes 100000000`は単一入力ファイルの上限も同じ100 MBに揃える指定である。生成Markdownには見出しや出典情報も付加されるため、実行後は実サイズが上限内であることを確認する。Agent Builder側の制限が変更された場合は、最新仕様に合わせて両方の値を見直す。
 
 ## 成果物の役割
 
