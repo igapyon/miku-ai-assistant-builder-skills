@@ -6,10 +6,10 @@
 
 | 役割 | バックエンド | 同梱ファイル | CLI version | SHA-256 |
 |---|---|---|---|---|
-| Knowledge source生成 | Java | `runtime/miku-text-bundle-java-1.5.0.jar` | `1.5.0` | `77315a89f0d9f474d67aeddc964b7cca350af7557068c3f905c533d8532d410a` |
-| Knowledge source生成 | Node.js | `runtime/miku-text-bundle-1.5.1.mjs` | `1.5.1` | `2bb9bebc9344253375141736ca435309724da8f2a26caf7bf0120abcc22bd45c` |
-| DOCX生成 | Node.js | `runtime/miku-md2docx-0.9.2.mjs` | `0.9.2` | `da473724bb1f28876c1adda55f22fc87f387fbaadce04d31f8840f9409557f3a` |
-| DOCX生成 | Java | `runtime/miku-md2docx-java-0.9.1.jar` | `0.9.1` | `77168ad5f8eaeb06837cee780c28d4dba47c3a33310167644d23b1fdbdb77a23` |
+| Knowledge source生成 | Java | `runtime/miku-text-bundle-java-1.6.0.jar` | `1.6.0` | `b05d78b142af4cb8f99989a7428c6516e4aec2abea4ade51e772eb4cb853df97` |
+| Knowledge source生成 | Node.js | `runtime/miku-text-bundle-1.6.0.mjs` | `1.6.0` | `b1044ae7fbcc13b5998d8aa857445bf80de02392875c75ecd002186e1f353c8b` |
+| DOCX生成 | Node.js | `runtime/miku-md2docx-1.0.1.mjs` | `1.0.1` | `85bae25e3e595c6b2f5f74955196da5e010797506ee1d360a0e987a8004c1fe4` |
+| DOCX生成 | Java | `runtime/miku-md2docx-java-1.0.1.jar` | `1.0.1` | `53c9810e73049579c51879c50e990f8657fa87a26cf0d6b93fac3a1adfbc4532` |
 
 ## 選択順
 
@@ -21,9 +21,9 @@
 
 ## 上流
 
-- `miku-text-bundle` Node.js: <https://github.com/igapyon/miku-text-bundle/releases/tag/v1.5.1>
-- `miku-text-bundle` Java: <https://github.com/igapyon/miku-text-bundle-java/releases/tag/v1.5.0>
-- `miku-md2docx` Node.js: <https://github.com/igapyon/miku-md2docx/releases/tag/v0.9.2>
-- `miku-md2docx` Java: <https://github.com/igapyon/miku-md2docx-java/releases/tag/v0.9.1>
+- `miku-text-bundle` Node.js: <https://github.com/igapyon/miku-text-bundle/releases/tag/v1.6.0>
+- `miku-text-bundle` Java: <https://github.com/igapyon/miku-text-bundle-java/releases/tag/v1.6.0>
+- `miku-md2docx` Node.js: <https://github.com/igapyon/miku-md2docx/releases/tag/v1.0.1>
+- `miku-md2docx` Java: <https://github.com/igapyon/miku-md2docx-java/releases/tag/v1.0.1>
 
 ランタイム更新時は、Node.js版とJava版を個別の上流リリースへ固定し、ファイル、版、SHA-256、索引、スモークテストを同時に更新する。

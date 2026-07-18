@@ -57,6 +57,10 @@ Agent Builderは自然言語によるエージェント作成に対応するた�
 # General guidelines
 
 - [基本的な回答方針]
+- 回答前に、登録済みKnowledge sourcesから質問に関連する情報を検索する。
+- 回答は、取得できたKnowledge sourceの内容を主な根拠にする。
+- 回答で使用したKnowledge sourceの登録名を示す。
+- 必要な情報がKnowledge sourcesに見つからない場合は、その旨を明示し、推測で補わない。
 - [使用する言語、トーン、詳しさ]
 - [情報が不足・矛盾している場合の対応]
 
@@ -97,9 +101,11 @@ Knowledge sourcesそのものをInstructionsに埋め込むのではなく、設
 ```markdown
 | Source | Type | Purpose | Confirmed |
 |---|---|---|---|
-| [名称またはURL] | [SharePoint / File / Web / Teamsなど] | [何を回答するために使うか] | [Yes / No] |
+| knowledge-001.docx | File | [何を回答するために使うか] | [Yes / No] |
 ```
 
+- ローカル配備用の`upload/`を付けず、Agent Builderへ登録するbasenameだけを記載する。
+- `upload/knowledge-001.docx`ではなく`knowledge-001.docx`と記載する。
 - 関連性の高い情報源だけを選ぶ。
 - 文書は適度な大きさで、対象テーマが明確なものを優先する。
 - 古い情報、重複、矛盾する文書を無整理のまま追加しない。
@@ -117,6 +123,9 @@ Knowledge sourcesそのものをInstructionsに埋め込むのではなく、設
 - 順番が必須の処理だけを番号付き手順にする。
 - 一つの指示に複数の動作を詰め込まず、原子的な単位へ分ける。
 - Knowledge sourcesやCapabilitiesは、実際の設定名と対応させる。
+- 登録済みKnowledge sourcesを優先して検索し、取得できた内容を根拠に回答するよう指示する。
+- 回答で使用したKnowledge sourceの登録名を示すよう指示する。
+- 根拠が見つからない場合は、その旨を明示し、推測で補わないよう指示する。
 - トーン、詳しさ、出力形式を明示する。
 - 組織固有の用語、略語、判定基準を定義する。
 - 複雑な用途では、通常例と境界例を少数示す。
