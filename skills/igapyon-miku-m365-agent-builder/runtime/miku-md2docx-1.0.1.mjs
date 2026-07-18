@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-globalThis.__MIKU_MD2DOCX_VERSION = "0.9.2";
+globalThis.__MIKU_MD2DOCX_VERSION = "1.0.1";
 
 // scripts/lib/cli-support.mjs
 import { dirname, resolve } from "node:path";
@@ -229,6 +229,12 @@ var require_format = __commonJS({
 });
 var textEncoder = new TextEncoder();
 var textDecoder = new TextDecoder();
+function readUint16(data, offset) {
+  return data[offset] | data[offset + 1] << 8;
+}
+function readUint32(data, offset) {
+  return (data[offset] | data[offset + 1] << 8 | data[offset + 2] << 16 | data[offset + 3] << 24) >>> 0;
+}
 function writeUint16(buffer, offset, value2) {
   buffer[offset] = value2 & 255;
   buffer[offset + 1] = value2 >>> 8 & 255;
@@ -251,6 +257,9 @@ function concatBytes(parts) {
 }
 function asBytes(data) {
   return typeof data === "string" ? textEncoder.encode(data) : data;
+}
+function createDiagnostic(severity, code3, message, path2) {
+  return path2 === void 0 ? { severity, code: code3, message } : { severity, code: code3, message, path: path2 };
 }
 function normalizeOpcPartPath(partPath) {
   const withoutHash = partPath.split("#", 1)[0] ?? "";
@@ -284,7 +293,42 @@ function escapeXmlAttribute(value2) {
   return escapeXmlText(value2).replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 function sanitizeXmlText(value2) {
-  return value2.replace(/[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD]/g, "");
+  return value2.replace(
+    /[^\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\u{10000}-\u{10FFFF}]/gu,
+    ""
+  );
+}
+function parseXmlAttributes(tag) {
+  const attributes = /* @__PURE__ */ new Map();
+  const pattern = /([A-Za-z_][\w:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+  for (const match of tag.matchAll(pattern)) {
+    attributes.set(match[1], decodeXmlEntities(match[2] ?? match[3] ?? ""));
+  }
+  return attributes;
+}
+function decodeXmlEntities(value2) {
+  return value2.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+}
+function parseOpcContentTypesXml(xml) {
+  const defaults = [];
+  const overrides = [];
+  for (const match of xml.matchAll(/<Default\b([^>]*)\/?>/g)) {
+    const attributes = parseXmlAttributes(match[1] ?? "");
+    const extension2 = attributes.get("Extension");
+    const contentType = attributes.get("ContentType");
+    if (extension2 !== void 0 && contentType !== void 0) {
+      defaults.push({ extension: extension2, contentType });
+    }
+  }
+  for (const match of xml.matchAll(/<Override\b([^>]*)\/?>/g)) {
+    const attributes = parseXmlAttributes(match[1] ?? "");
+    const partName = attributes.get("PartName");
+    const contentType = attributes.get("ContentType");
+    if (partName !== void 0 && contentType !== void 0) {
+      overrides.push({ partName: normalizeOpcPartPath(partName), contentType });
+    }
+  }
+  return { defaults, overrides };
 }
 function buildOpcContentTypesXml(contentTypes) {
   const defaults = contentTypes.defaults.map((item) => `<Default Extension="${escapeXmlAttribute(item.extension)}" ContentType="${escapeXmlAttribute(item.contentType)}"/>`).join("");
@@ -318,6 +362,28 @@ var CENTRAL_DIRECTORY_SIGNATURE = 33639248;
 var LOCAL_FILE_SIGNATURE = 67324752;
 var ZIP_GENERAL_PURPOSE_FLAG_UTF8 = 2048;
 var FIXED_TIMESTAMP = new Date(Date.UTC(1980, 0, 1, 0, 0, 0));
+function readZipPackage(data) {
+  const diagnostics = [];
+  const entries = [];
+  const centralDirectory = readCentralDirectory(data, diagnostics);
+  for (const central of centralDirectory) {
+    try {
+      const compressed = readZipEntryCompressedData(data, central);
+      const entryData = central.method === 0 ? compressed : getNodeZlib().inflateRawSync(compressed);
+      entries.push(buildZipEntry(central, entryData));
+    } catch (error) {
+      diagnostics.push(
+        createDiagnostic(
+          "error",
+          "zip.entry.read_failed",
+          error instanceof Error ? error.message : String(error),
+          central.path
+        )
+      );
+    }
+  }
+  return { entries, diagnostics };
+}
 function writeZipPackage(entries, options = {}) {
   const order2 = options.order ?? "stable";
   const prepared = prepareZipEntries(entries, options);
@@ -336,6 +402,14 @@ function writeZipPackage(entries, options = {}) {
   const centralDirectory = concatBytes(centralParts);
   const end = buildEndOfCentralDirectory(prepared.length, centralDirectory.length, offset);
   return concatBytes([...localParts, centralDirectory, end]);
+}
+function getZipEntry(entries, entryPath) {
+  const normalized = normalizeOpcPartPath(entryPath);
+  return entries.find((entry) => entry.path === normalized);
+}
+function getZipTextEntry(entries, entryPath) {
+  const entry = getZipEntry(entries, entryPath);
+  return entry === void 0 ? void 0 : textDecoder.decode(entry.data);
 }
 function prepareZipEntries(entries, options) {
   const timestamp = options.timestamp ?? FIXED_TIMESTAMP;
@@ -422,12 +496,93 @@ function buildEndOfCentralDirectory(entryCount, centralDirectorySize, centralDir
   writeUint16(end, 20, 0);
   return end;
 }
+function readZipEntryCompressedData(data, central) {
+  const localNameLength = readUint16(data, central.localHeaderOffset + 26);
+  const localExtraLength = readUint16(data, central.localHeaderOffset + 28);
+  const dataStart = central.localHeaderOffset + 30 + localNameLength + localExtraLength;
+  return data.slice(dataStart, dataStart + central.compressedSize);
+}
+function buildZipEntry(central, entryData) {
+  return {
+    path: central.path,
+    data: new Uint8Array(entryData),
+    compression: central.method === 0 ? "store" : "deflate",
+    compressedSize: central.compressedSize,
+    uncompressedSize: central.uncompressedSize,
+    crc32: central.crc,
+    modifiedAt: central.modifiedAt
+  };
+}
+function readCentralDirectory(data, diagnostics) {
+  const eocdOffset = findEndOfCentralDirectory(data);
+  if (eocdOffset < 0) {
+    diagnostics.push(createDiagnostic("error", "zip.eocd.missing", "End of central directory was not found."));
+    return [];
+  }
+  const entryCount = readUint16(data, eocdOffset + 10);
+  const centralDirectoryOffset = readUint32(data, eocdOffset + 16);
+  const entries = [];
+  let offset = centralDirectoryOffset;
+  for (let index2 = 0; index2 < entryCount; index2 += 1) {
+    if (readUint32(data, offset) !== CENTRAL_DIRECTORY_SIGNATURE) {
+      diagnostics.push(createDiagnostic("error", "zip.central_directory.invalid", "Central directory entry signature is invalid."));
+      break;
+    }
+    const flags = readUint16(data, offset + 8);
+    const method = readUint16(data, offset + 10);
+    const time = readUint16(data, offset + 12);
+    const date = readUint16(data, offset + 14);
+    const crc = readUint32(data, offset + 16);
+    const compressedSize = readUint32(data, offset + 20);
+    const uncompressedSize = readUint32(data, offset + 24);
+    const fileNameLength = readUint16(data, offset + 28);
+    const extraLength = readUint16(data, offset + 30);
+    const commentLength = readUint16(data, offset + 32);
+    const localHeaderOffset = readUint32(data, offset + 42);
+    const nameStart = offset + 46;
+    const path2 = textDecoder.decode(data.slice(nameStart, nameStart + fileNameLength));
+    if (method !== 0 && method !== 8) {
+      diagnostics.push(createDiagnostic("error", "zip.compression.unsupported", `Unsupported ZIP compression method: ${method}`, path2));
+    } else {
+      entries.push({
+        path: normalizeOpcPartPath(path2),
+        method,
+        flags,
+        crc,
+        compressedSize,
+        uncompressedSize,
+        localHeaderOffset,
+        modifiedAt: fromDosDateTime(date, time)
+      });
+    }
+    offset = nameStart + fileNameLength + extraLength + commentLength;
+  }
+  return entries;
+}
+function findEndOfCentralDirectory(data) {
+  const minOffset = Math.max(0, data.length - 65535 - 22);
+  for (let offset = data.length - 22; offset >= minOffset; offset -= 1) {
+    if (readUint32(data, offset) === EOCD_SIGNATURE) {
+      return offset;
+    }
+  }
+  return -1;
+}
 function toDosTime(date) {
   return date.getUTCHours() << 11 | date.getUTCMinutes() << 5 | Math.floor(date.getUTCSeconds() / 2);
 }
 function toDosDate(date) {
   const year = Math.max(1980, date.getUTCFullYear());
   return year - 1980 << 9 | date.getUTCMonth() + 1 << 5 | date.getUTCDate();
+}
+function fromDosDateTime(date, time) {
+  const year = 1980 + (date >>> 9 & 127);
+  const month = date >>> 5 & 15;
+  const day = date & 31;
+  const hour = time >>> 11 & 31;
+  const minute = time >>> 5 & 63;
+  const second = (time & 31) * 2;
+  return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
 }
 function getNodeZlib() {
   const runtime = globalThis;
@@ -507,9 +662,11 @@ var REL_HYPERLINK = "http://schemas.openxmlformats.org/officeDocument/2006/relat
 var REL_IMAGE = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image";
 var REL_STYLES = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles";
 var REL_NUMBERING = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering";
+var REL_SETTINGS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings";
 var REQUIRED_DOCUMENT_RELATIONSHIPS = [
   { id: "rIdStyles", type: REL_STYLES, target: "styles.xml" },
-  { id: "rIdNumbering", type: REL_NUMBERING, target: "numbering.xml" }
+  { id: "rIdNumbering", type: REL_NUMBERING, target: "numbering.xml" },
+  { id: "rIdSettings", type: REL_SETTINGS, target: "settings.xml" }
 ];
 function addRelationship(context, type, target, targetMode) {
   const id = `rId${context.nextRelId++}`;
@@ -569,6 +726,28 @@ function numberingXml() {
     '<w:num w:numId="2"><w:abstractNumId w:val="1"/></w:num>',
     "</w:numbering>"
   ].join("");
+}
+function settingsXml(templateXml) {
+  const compatibilitySetting = '<w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/>';
+  if (templateXml === void 0) {
+    return [
+      XML_DECLARATION,
+      '<w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">',
+      `<w:compat>${compatibilitySetting}</w:compat>`,
+      "</w:settings>"
+    ].join("");
+  }
+  const existingCompatibilityMode = /<w:compatSetting\b(?=[^>]*\bw:name=(?:"compatibilityMode"|'compatibilityMode'))[^>]*(?:\/>|>\s*<\/w:compatSetting>)/;
+  if (existingCompatibilityMode.test(templateXml)) {
+    return templateXml.replace(existingCompatibilityMode, compatibilitySetting);
+  }
+  if (/<w:compat\s*\/>/.test(templateXml)) {
+    return templateXml.replace(/<w:compat\s*\/>/, `<w:compat>${compatibilitySetting}</w:compat>`);
+  }
+  if (/<w:compat\b[^>]*>/.test(templateXml)) {
+    return templateXml.replace("</w:compat>", `${compatibilitySetting}</w:compat>`);
+  }
+  return templateXml.replace("</w:settings>", `<w:compat>${compatibilitySetting}</w:compat></w:settings>`);
 }
 function corePropsXml() {
   return [
@@ -665,6 +844,9 @@ function numberingLevelXml(level) {
   ].join("");
 }
 function buildDocxEntries(documentXml, context) {
+  if (context.templatePackage !== void 0) {
+    return buildTemplatedDocxEntries(documentXml, context, context.templatePackage);
+  }
   return [
     { path: "[Content_Types].xml", data: contentTypesXml(context.imageMedia) },
     { path: "_rels/.rels", data: packageRelsXml() },
@@ -674,13 +856,57 @@ function buildDocxEntries(documentXml, context) {
     { path: "word/_rels/document.xml.rels", data: documentRelsXml(context.relationships) },
     { path: "word/styles.xml", data: stylesXml() },
     { path: "word/numbering.xml", data: numberingXml() },
+    { path: "word/settings.xml", data: settingsXml() },
     ...context.imageMedia
   ];
 }
-function buildDocumentXml(body) {
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+function buildDocumentXml(body, context) {
+  const sectionXml = context.templatePackage === void 0 ? defaultSectionXml() : extractTemplateSectionXml(context.templatePackage) ?? defaultSectionXml();
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${body}${sectionXml}</w:body></w:document>`;
 }
-function contentTypesXml(images) {
+function buildTemplatedDocxEntries(documentXml, context, templatePackage) {
+  let entries = templatePackage.entries.map((entry) => ({ path: entry.path, data: entry.data }));
+  entries = upsertEntry(entries, { path: "[Content_Types].xml", data: contentTypesXml(context.imageMedia, templatePackage.entries) });
+  entries = upsertEntry(entries, { path: "_rels/.rels", data: packageRelsXml() });
+  entries = upsertEntry(entries, { path: "docProps/app.xml", data: getZipTextEntry(templatePackage.entries, "docProps/app.xml") ?? appPropsXml() });
+  entries = upsertEntry(entries, { path: "docProps/core.xml", data: corePropsXml() });
+  entries = upsertEntry(entries, { path: "word/document.xml", data: documentXml });
+  entries = upsertEntry(entries, { path: "word/_rels/document.xml.rels", data: documentRelsXml(context.relationships) });
+  entries = upsertEntry(entries, { path: "word/styles.xml", data: templateStylesXml(templatePackage) });
+  entries = upsertEntry(entries, { path: "word/numbering.xml", data: numberingXml() });
+  entries = upsertEntry(entries, {
+    path: "word/settings.xml",
+    data: settingsXml(getZipTextEntry(templatePackage.entries, "word/settings.xml"))
+  });
+  for (const image2 of context.imageMedia) {
+    entries = upsertEntry(entries, image2);
+  }
+  return entries;
+}
+function templateStylesXml(templatePackage) {
+  const templateXml = templatePackage.stylesBytes === void 0 ? void 0 : new TextDecoder().decode(templatePackage.stylesBytes);
+  if (templateXml === void 0) {
+    return stylesXml();
+  }
+  return mergeMissingStyles(templateXml, stylesXml());
+}
+function mergeMissingStyles(templateXml, fallbackXml) {
+  let merged = templateXml;
+  for (const styleId of ["Normal", "Heading1", "Heading2", "Heading3", "Heading4", "Heading5", "Heading6", "Quote", "Code", "Separator", "CodeChar"]) {
+    if (new RegExp(`<w:style\\b[^>]*\\bw:styleId=["']${styleId}["']`).test(merged)) {
+      continue;
+    }
+    const styleXml = fallbackXml.match(new RegExp(`<w:style\\b[^>]*\\bw:styleId=["']${styleId}["'][\\s\\S]*?<\\/w:style>`))?.[0];
+    if (styleXml !== void 0) {
+      merged = merged.replace("</w:styles>", `${styleXml}</w:styles>`);
+    }
+  }
+  return merged;
+}
+function contentTypesXml(images, templateEntries) {
+  if (templateEntries !== void 0) {
+    return mergeContentTypesXml(images, templateEntries);
+  }
   const defaults = /* @__PURE__ */ new Set(["png", "jpg", "jpeg", "gif", "webp"]);
   for (const image2 of images) {
     const ext = image2.path.split(".").pop()?.toLowerCase();
@@ -711,10 +937,49 @@ function contentTypesXml(images) {
         partName: "word/numbering.xml",
         contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"
       },
+      {
+        partName: "word/settings.xml",
+        contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"
+      },
       { partName: "docProps/core.xml", contentType: "application/vnd.openxmlformats-package.core-properties+xml" },
       { partName: "docProps/app.xml", contentType: "application/vnd.openxmlformats-officedocument.extended-properties+xml" }
     ]
   });
+}
+function mergeContentTypesXml(images, templateEntries) {
+  const templateXml = getZipTextEntry(templateEntries, "[Content_Types].xml");
+  const contentTypes = templateXml === void 0 ? { defaults: [], overrides: [] } : parseOpcContentTypesXml(templateXml);
+  const defaults = new Map(contentTypes.defaults.map((item) => [item.extension, item.contentType]));
+  defaults.set("rels", "application/vnd.openxmlformats-package.relationships+xml");
+  defaults.set("xml", "application/xml");
+  for (const image2 of images) {
+    const ext = image2.path.split(".").pop()?.toLowerCase();
+    if (ext) {
+      defaults.set(ext, contentTypeForExt(ext));
+    }
+  }
+  const overrides = new Map(contentTypes.overrides.map((item) => [item.partName, item.contentType]));
+  overrides.set("word/document.xml", "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml");
+  overrides.set("word/styles.xml", "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml");
+  overrides.set("word/numbering.xml", "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml");
+  overrides.set("word/settings.xml", "application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml");
+  overrides.set("docProps/core.xml", "application/vnd.openxmlformats-package.core-properties+xml");
+  overrides.set("docProps/app.xml", "application/vnd.openxmlformats-officedocument.extended-properties+xml");
+  return buildOpcContentTypesXml({
+    defaults: Array.from(defaults, ([extension2, contentType]) => ({ extension: extension2, contentType })),
+    overrides: Array.from(overrides, ([partName, contentType]) => ({ partName, contentType }))
+  });
+}
+function extractTemplateSectionXml(templatePackage) {
+  const documentXml = new TextDecoder().decode(templatePackage.documentXmlBytes);
+  const sectionXml = documentXml?.match(/<w:sectPr\b[\s\S]*?<\/w:sectPr>/)?.[0];
+  return sectionXml?.replace(/<w:headerReference\b[^>]*\/>/g, "").replace(/<w:footerReference\b[^>]*\/>/g, "");
+}
+function defaultSectionXml() {
+  return '<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720" w:gutter="0"/></w:sectPr>';
+}
+function upsertEntry(entries, entry) {
+  return [...entries.filter((item) => item.path !== entry.path), entry];
 }
 function bail(error) {
   if (error) {
@@ -12392,6 +12657,23 @@ function collectHeadingBookmarks(tree, summary) {
   }
   return { headingBookmarks: bookmarks, knownBookmarks: used };
 }
+function loadDocxTemplatePackage(data) {
+  const result = readZipPackage(data);
+  const files = new Map(result.entries.map((entry) => [entry.path, entry.data]));
+  const documentXmlBytes = files.get("word/document.xml");
+  if (documentXmlBytes === void 0) {
+    throw new Error("word/document.xml was not found in template DOCX.");
+  }
+  return {
+    entries: result.entries,
+    files,
+    documentXmlBytes,
+    relationshipsBytes: files.get("word/_rels/document.xml.rels"),
+    stylesBytes: files.get("word/styles.xml"),
+    numberingBytes: files.get("word/numbering.xml"),
+    contentTypesBytes: files.get("[Content_Types].xml")
+  };
+}
 function escapeXml(value2) {
   return value2.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -12449,6 +12731,13 @@ function renderImage(node2, context) {
   const url = String(node2.url ?? "");
   const alt = String(node2.alt ?? "");
   context.summary.images += 1;
+  if (isRemoteImageUrl(url)) {
+    context.summary.missingImages += 1;
+    context.summary.remoteImages += 1;
+    context.summary.remoteImageDetails.push({ url, alt });
+    const fallback = `[Missing image: ${alt || url}]`;
+    return { xml: runXml(fallback), text: fallback };
+  }
   const asset = context.options.imageLoader?.(url);
   if (!asset) {
     context.summary.missingImages += 1;
@@ -12468,6 +12757,9 @@ function renderImage(node2, context) {
     xml: drawingXml(relId, alt, displaySize.width, displaySize.height, context.nextDocPrId++),
     text: alt
   };
+}
+function isRemoteImageUrl(url) {
+  return /^[a-z][a-z0-9+.-]*:\/\//i.test(url);
 }
 function renderLink(node2, context, inherited, renderInlineChildren2) {
   context.summary.links += 1;
@@ -12726,10 +13018,12 @@ function createSummary() {
     images: 0,
     embeddedImages: 0,
     missingImages: 0,
+    remoteImages: 0,
     resizedImages: 0,
     frontMatter: false,
     unsupportedHtml: 0,
-    missingImageDetails: []
+    missingImageDetails: [],
+    remoteImageDetails: []
   };
 }
 function formatSummary(summary) {
@@ -12749,6 +13043,7 @@ function formatSummary(summary) {
     `images: ${summary.images}`,
     `embeddedImages: ${summary.embeddedImages}`,
     `missingImages: ${summary.missingImages}`,
+    `remoteImages: ${summary.remoteImages}`,
     `resizedImages: ${summary.resizedImages}`,
     `frontMatter: ${summary.frontMatter}`,
     `unsupportedHtml: ${summary.unsupportedHtml}`
@@ -12760,12 +13055,20 @@ function formatSummary(summary) {
       lines.push(`  alt: ${detail.alt}`);
     }
   }
+  if (summary.remoteImageDetails.length > 0) {
+    lines.push("remoteImageDetails:");
+    for (const detail of summary.remoteImageDetails) {
+      lines.push(`- url: ${detail.url}`);
+      lines.push(`  alt: ${detail.alt}`);
+    }
+  }
   return `${lines.join("\n")}
 `;
 }
 function convertMarkdownToDocx(markdown, options = {}) {
   const tree = parseMarkdown(markdown);
   const summary = createSummary();
+  const templatePackage = options.templateDocx === void 0 ? void 0 : loadDocxTemplatePackage(options.templateDocx);
   const { headingBookmarks, knownBookmarks } = collectHeadingBookmarks(tree, summary);
   const context = {
     summary,
@@ -12773,12 +13076,13 @@ function convertMarkdownToDocx(markdown, options = {}) {
     headingBookmarks,
     knownBookmarks,
     imageMedia: [],
+    templatePackage,
     nextRelId: 1,
     nextDocPrId: 1,
     options
   };
   const bodyBlocks = renderBlocks(tree.children ?? [], context);
-  const documentXml = buildDocumentXml(bodyBlocks.join(""));
+  const documentXml = buildDocumentXml(bodyBlocks.join(""), context);
   const entries = buildDocxEntries(documentXml, context);
   return { docx: writeZipPackage(entries), summary };
 }
@@ -12804,13 +13108,15 @@ function main(argv) {
   convertFile(args);
 }
 function parseArgs(argv) {
-  const args = { input: void 0, out: void 0, summary: false, summaryOut: void 0, verbose: false };
+  const args = { input: void 0, out: void 0, template: void 0, summary: false, summaryOut: void 0, verbose: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--help") return { help: true };
     if (arg === "--version") return { version: true };
     if (arg === "--out") {
       args.out = argv[++i];
+    } else if (arg === "--template") {
+      args.template = argv[++i];
     } else if (arg === "--summary") {
       args.summary = true;
     } else if (arg === "--summary-out") {
@@ -12830,6 +13136,7 @@ function helpText() {
 
 Usage:
   npm run cli -- <input.md> --out <output.docx>
+  node scripts/miku-md2docx-cli.mjs <input.md> --out <output.docx>
   npm run cli -- --help
   npm run cli -- --version
 
@@ -12842,21 +13149,49 @@ Required options:
 Options:
   --summary             Print conversion summary to stdout
   --summary-out <file>  Write conversion summary to file
+  --template <docx>     Reuse compatible DOCX template package parts
   --verbose             Print progress diagnostics to stderr
   --help                Show this help
   --version             Show version
 
+Inputs:
+  <input.md> is read as UTF-8 Markdown. Local images are resolved relative to
+  the input Markdown file.
+
+Outputs:
+  --out <file> is the generated editable Word .docx file. Summary output is
+  written only when --summary or --summary-out is specified.
+
+Overwrite behavior:
+  Existing --out and --summary-out files are overwritten.
+
+Diagnostics:
+  CLI usage errors and unexpected runtime errors are written to stderr.
+  Missing images, remote image URLs, unresolved internal links, and unsupported
+  HTML are reported in the summary without aborting conversion.
+
+Exit codes:
+  0  success, --help, or --version
+  1  conversion or file-system failure
+  2  invalid CLI usage, such as missing <input.md> or --out
+
 Examples:
   npm run cli -- README.md --out README.docx
+  npm run cli -- README.md --out README.docx --template template.docx
   npm run cli -- README.md --out README.docx --summary
   npm run cli -- README.md --out README.docx --summary-out README.summary.txt
 
-Notes:
-  Local images are resolved relative to the input Markdown file.
+Template notes:
+  Template mode replaces the template document body with generated Markdown
+  content while preserving compatible package parts where practical.
+  Template styles and section settings may carry over; numbering is regenerated.
+  Existing template body paragraphs are not copied.
+  Header and footer references are not carried over in the first cut.
+
+Markdown handling notes:
   Remote image URLs are not downloaded.
-  Missing images and unresolved internal links are reported in the summary
-  without aborting conversion.
-  If <input.md> or --out is missing, the command exits with code 2.
+  SVG images are not converted.
+  Table alignment and merged cells are ignored.
 `;
 }
 function convertFile(args) {
@@ -12867,6 +13202,7 @@ function convertFile(args) {
   const markdown = readFileSync(inputPath, "utf8");
   const result = convertMarkdownToDocx(markdown, {
     inputPath,
+    templateDocx: args.template === void 0 ? void 0 : readFileSync(resolve(args.template)),
     imageLoader: (imagePath) => loadImage(inputPath, imagePath)
   });
   writeFileSync(outputPath, result.docx);

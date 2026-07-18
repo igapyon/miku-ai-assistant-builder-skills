@@ -40,14 +40,15 @@ Microsoft 365 Copilot の Agent Builder 向け入力データを作成する。
 
 1. 利用者の目的、想定利用者、代表的な質問、入力元、出力先を確認する。不明点は推測で確定せず、作業を進められる範囲では仮定として記録する。
 2. [制限・設計上の注意](references/platform/02-limitations.md)を使い、Agent Builderへの適合性を判定する。適合度が低い要求は「案内」「情報整理」「判断材料の提示」「下書き作成」へ調整する。
-3. 入力が既存フォルダの場合は、原本を変更せずに棚卸しする。Knowledge sourcesへ含める範囲、除外、文字コード、単一ファイル上限、分割目安を決める。
+3. 入力が既存フォルダの場合は、原本を変更せずに棚卸しする。Knowledge sourcesへ含める範囲、除外、文字コード、単一ファイル上限、分割目安を決める。`.env`と`.env.*`は内容にかかわらず必ず除外する。
 4. 同梱`miku-text-bundle`ランタイムが`--mode knowledge-source`をサポートすることを`--help`または`--version`で確認し、dry-run後にknowledge-sourceモードを実行する。未対応なら旧handoff出力で代用せず、v1.5.0以降への更新が必要と報告する。
 5. 生成された番号付きMarkdownを中間成果物として`work/knowledge-markdown/`へ置く。`<prefix>-index.md`は対応関係、スキップ、警告、旧生成物候補を確認する管理用ファイルとして`work/`へ置き、変換・登録しない。
 6. 番号付きMarkdownを一対一で`miku-md2docx`へ渡し、同じbasenameのDOCXをフラットな`upload/`へ生成する。`agent-builder-input.md`、`items-to-confirm.md`、管理用indexはDOCX化しない。
 7. 元リポジトリ基準の相対パスとファイル境界がDOCX本文に残ることを確認する。Knowledge sources間の相対リンクには依存せず、外部参照には確認済みの絶対URLを使う。
 8. InstructionsとKnowledge sourcesを分離する。振る舞い、処理順、口調、禁止事項、出力形式はInstructionsへ置き、回答根拠となる事実だけをKnowledge sourcesへ置く。
-9. [入力項目と推奨形式](references/instructions/01-input-fields.md)に従い、Name、Description、Instructions、Starter prompts、Knowledge sources、Capabilities、Items to confirmを作る。
-10. DOCXの件数、対応、開封可否、文字数、リンク、重複、矛盾、機密情報、スキップ、参照切れを確認し、利用者が承認してから`upload/`内のDOCXだけをAgent Builderへ設定できる状態にする。
+9. [入力項目と推奨形式](references/instructions/01-input-fields.md)に従い、Name、Description、Instructions、Starter prompts、Knowledge sources、Capabilities、Items to confirmを作る。Instructionsには、登録済みKnowledge sourcesを優先して検索し、取得できた内容を根拠に回答し、根拠資料名を示し、必要な情報が見つからない場合は推測せず明示する方針を含める。
+10. `agent-builder-input.md`のKnowledge sources欄では、ローカルの`upload/`を付けず、Agent Builderへフラットに登録するbasenameだけを記載する。例: `knowledge-001.docx`。
+11. DOCXの件数、対応、開封可否、文字数、リンク、重複、矛盾、機密情報、スキップ、参照切れを確認し、利用者が承認してから`upload/`内のDOCXだけをAgent Builderへ設定できる状態にする。
 
 ## Output
 
@@ -85,6 +86,8 @@ m365-agent-builder-output/
 - 中間Markdownを最終登録物として扱わない。
 - `upload/`にサブディレクトリや管理用ファイルを置かない。
 - DOCX間の相対リンクや読み込み順に依存しない。
+- `agent-builder-input.md`のKnowledge sources欄に`upload/`、ローカル絶対パス、その他の配備元ディレクトリを記載しない。
+- Instructionsには、登録済みKnowledge sourcesを回答根拠として優先し、根拠が見つからない事項を推測で補わない方針を含める。
 - マシン固有の絶対パスをKnowledge sourcesへ含めない。元ファイルはリポジトリルート基準の相対パスで識別する。
 - フォルダ内の全ファイルを無条件に含めない。
 - 読み取れない内容、欠落した文脈、URL、版、更新日を推測で補わない。

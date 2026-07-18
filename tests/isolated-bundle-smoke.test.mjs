@@ -20,20 +20,20 @@ test("bundle installs directly under the agent home skills directory", () => {
     assert.equal(fs.existsSync(path.resolve(agentHome, "skills", "skills", skillName, "SKILL.md")), false);
     const runtimeRoot = path.resolve(agentHome, "skills", skillName, "runtime");
     assert.equal(
-      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2docx-0.9.2.mjs"), "--version"], { encoding: "utf8" }).trim(),
-      "0.9.2"
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2docx-1.0.1.mjs"), "--version"], { encoding: "utf8" }).trim(),
+      "1.0.1"
     );
     assert.equal(
-      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2docx-java-0.9.1.jar"), "--version"], { encoding: "utf8" }).trim(),
-      "0.9.1"
+      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2docx-java-1.0.1.jar"), "--version"], { encoding: "utf8" }).trim(),
+      "1.0.1"
     );
     assert.equal(
-      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-text-bundle-1.5.1.mjs"), "--version"], { encoding: "utf8" }).trim(),
-      "1.5.1"
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-text-bundle-1.6.0.mjs"), "--version"], { encoding: "utf8" }).trim(),
+      "1.6.0"
     );
     assert.equal(
-      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-text-bundle-java-1.5.0.jar"), "--version"], { encoding: "utf8" }).trim(),
-      "1.5.0"
+      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-text-bundle-java-1.6.0.jar"), "--version"], { encoding: "utf8" }).trim(),
+      "1.6.0"
     );
   } finally {
     fs.rmSync(agentHome, { recursive: true, force: true });

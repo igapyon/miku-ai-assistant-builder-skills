@@ -5,28 +5,117 @@ import { TextDecoder } from "node:util";
 import { fileURLToPath } from "node:url";
 
 // markdown.js
+function sourceCode(displayName, fenceLanguage) {
+    return { displayName, fenceLanguage, blockLabel: "Source code block" };
+}
+function sourceText(displayName, fenceLanguage) {
+    return { displayName, fenceLanguage, blockLabel: "Source text block" };
+}
 const EXTENSION_LANGUAGES = {
-    ts: "ts",
-    tsx: "tsx",
-    js: "js",
-    jsx: "jsx",
-    mjs: "js",
-    cjs: "js",
-    java: "java",
-    cs: "csharp",
-    md: "md",
-    json: "json",
+    ts: sourceCode("TypeScript", "ts"),
+    mts: sourceCode("TypeScript", "ts"),
+    cts: sourceCode("TypeScript", "ts"),
+    tsx: sourceCode("TypeScript TSX", "tsx"),
+    js: sourceCode("JavaScript", "js"),
+    jsx: sourceCode("JavaScript JSX", "jsx"),
+    mjs: sourceCode("JavaScript", "js"),
+    cjs: sourceCode("JavaScript", "js"),
+    java: sourceCode("Java", "java"),
+    cs: sourceCode("C#", "csharp"),
+    py: sourceCode("Python", "python"),
+    pyw: sourceCode("Python", "python"),
+    go: sourceCode("Go", "go"),
+    rs: sourceCode("Rust", "rust"),
+    c: sourceCode("C", "c"),
+    h: sourceCode("C header", "c"),
+    cc: sourceCode("C++", "cpp"),
+    cpp: sourceCode("C++", "cpp"),
+    cxx: sourceCode("C++", "cpp"),
+    hh: sourceCode("C++ header", "cpp"),
+    hpp: sourceCode("C++ header", "cpp"),
+    hxx: sourceCode("C++ header", "cpp"),
+    swift: sourceCode("Swift", "swift"),
+    kt: sourceCode("Kotlin", "kotlin"),
+    kts: sourceCode("Kotlin Script", "kotlin"),
+    scala: sourceCode("Scala", "scala"),
+    rb: sourceCode("Ruby", "ruby"),
+    php: sourceCode("PHP", "php"),
+    sh: sourceCode("Shell", "bash"),
+    bash: sourceCode("Bash", "bash"),
+    zsh: sourceCode("Z shell", "zsh"),
+    fish: sourceCode("fish shell", "fish"),
+    ps1: sourceCode("PowerShell", "powershell"),
+    sql: sourceCode("SQL", "sql"),
+    html: sourceCode("HTML", "html"),
+    htm: sourceCode("HTML", "html"),
+    css: sourceCode("CSS", "css"),
+    scss: sourceCode("SCSS", "scss"),
+    sass: sourceCode("Sass", "sass"),
+    less: sourceCode("Less", "less"),
+    vue: sourceCode("Vue", "vue"),
+    svelte: sourceCode("Svelte", "svelte"),
+    groovy: sourceCode("Groovy", "groovy"),
+    gradle: sourceCode("Gradle", "groovy"),
+    md: sourceText("Markdown", "md"),
+    markdown: sourceText("Markdown", "md"),
+    txt: sourceText("Plain text", "text"),
+    rst: sourceText("reStructuredText", "rst"),
+    adoc: sourceText("AsciiDoc", "asciidoc"),
+    json: sourceCode("JSON", "json"),
+    jsonl: sourceCode("JSON Lines", "json"),
+    yaml: sourceText("YAML", "yaml"),
+    yml: sourceText("YAML", "yaml"),
+    xml: sourceText("XML", "xml"),
+    toml: sourceText("TOML", "toml"),
+    ini: sourceText("INI", "ini"),
+    cfg: sourceText("Configuration", "ini"),
+    conf: sourceText("Configuration", "text"),
+    properties: sourceText("Java properties", "properties"),
+    csv: sourceText("CSV", "csv"),
+    tsv: sourceText("TSV", "tsv"),
+};
+const FILE_NAME_LANGUAGES = {
+    dockerfile: sourceCode("Dockerfile", "dockerfile"),
+    containerfile: sourceCode("Containerfile", "dockerfile"),
+    makefile: sourceCode("Makefile", "makefile"),
+    gnumakefile: sourceCode("GNU Makefile", "makefile"),
+    gradlew: sourceCode("Shell", "bash"),
+    ".gitignore": sourceText("Git ignore rules", "gitignore"),
+    ".gitattributes": sourceText("Git attributes", "gitattributes"),
+    ".editorconfig": sourceText("EditorConfig", "editorconfig"),
+    ".npmrc": sourceText("npm configuration", "ini"),
+};
+const UNKNOWN_LANGUAGE = {
+    displayName: "Unknown",
+    fenceLanguage: "",
+    blockLabel: "Source content block",
 };
 function fenceFor(content) {
     const matches = content.match(/~{3,}/g) ?? [];
     const longest = matches.reduce((max, item) => Math.max(max, item.length), 2);
     return "~".repeat(longest + 1);
 }
-function languageFor(extension) {
-    return EXTENSION_LANGUAGES[extension] ?? "";
+function languageFor(extension, relativePath) {
+    const fileName = relativePath.split("/").at(-1)?.toLowerCase() ?? "";
+    return EXTENSION_LANGUAGES[extension] ?? FILE_NAME_LANGUAGES[fileName] ?? UNKNOWN_LANGUAGE;
 }
 function markdown(lines) {
-    return `${lines.join("\n").replace(/\n{3,}/g, "\n\n")}\n`;
+    const compactedLines = lines.filter((line, index) => line !== "" || lines[index - 1] !== "");
+    return `${compactedLines.join("\n")}\n`;
+}
+function displayPath(relativePath) {
+    return relativePath.replace(/\\/g, "\\\\").replace(/[\u0000-\u001f\u007f]/g, (character) => {
+        if (character === "\n") {
+            return "\\n";
+        }
+        if (character === "\r") {
+            return "\\r";
+        }
+        if (character === "\t") {
+            return "\\t";
+        }
+        return `\\u${(character.codePointAt(0) ?? 0).toString(16).padStart(4, "0")}`;
+    });
 }
 function frontMatter(role, metadata = {}, extra = []) {
     return [
@@ -48,7 +137,11 @@ function table(headers, alignments, rows) {
     ];
 }
 function code(value) {
-    return `\`${value}\``;
+    const displayed = displayPath(value).replace(/\|/g, "\\|");
+    const matches = displayed.match(/`+/g) ?? [];
+    const longest = matches.reduce((max, item) => Math.max(max, item.length), 0);
+    const delimiter = "`".repeat(longest + 1);
+    return `${delimiter}${displayed}${delimiter}`;
 }
 function warningList(warnings) {
     if (warnings.length === 0) {
@@ -65,28 +158,28 @@ function markerTable(markers) {
 function escapeTable(value) {
     return value.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 }
-function buildChunkMarkdown(chunk) {
+function buildFileBlockMarkdown(chunk) {
+    const path = displayPath(chunk.relativePath);
     const lines = [
-        `### ${chunk.relativePath}`,
+        `### FILE: ${path}`,
         "",
-        `- Characters: ${chunk.content.length}`,
-        `- Source characters: ${chunk.originalCharCount}`,
-        `- Source lines: ${chunk.originalLineCount}`,
+        `--- BEGIN FILE: ${path} ---`,
+        "",
     ];
-    if (chunk.splitReason) {
-        lines.push(`- Warning: ${chunk.splitReason}`);
-        lines.push(`- Split: ${chunk.chunkIndex} / ${chunk.chunkCount}`);
-    }
-    lines.push("");
-    if (chunk.splitReason) {
-        lines.push(`This file exceeded the size limit and was split. Source file: \`${chunk.relativePath}\`. Split: ${chunk.chunkIndex} / ${chunk.chunkCount}.`);
+    if (chunk.chunkCount > 1) {
+        lines.push(`Chunk: ${chunk.chunkIndex} / ${chunk.chunkCount}`);
+        lines.push(`Source lines: ${chunk.sourceStartLine ?? 0}-${chunk.sourceEndLine ?? 0}`);
         lines.push("");
     }
+    const language = languageFor(chunk.extension, chunk.relativePath);
     const fence = fenceFor(chunk.content);
-    const language = languageFor(chunk.extension);
-    lines.push(`${fence}${language}`);
-    lines.push(chunk.content);
-    lines.push(fence);
+    const fencedContent = `${fence}${language.fenceLanguage}\n${chunk.content}${chunk.content.endsWith("\n") ? "" : "\n"}${fence}`;
+    lines.push(language.blockLabel);
+    lines.push(`Language: ${language.displayName}`);
+    lines.push("");
+    lines.push(fencedContent);
+    lines.push("");
+    lines.push(`--- END FILE: ${path} ---`);
     lines.push("");
     return lines;
 }
@@ -146,12 +239,8 @@ function buildPartMarkdown(part, metadata = {}, options = {}) {
         `- Approx chars: ${part.charCount}`,
         "",
     ];
-    for (const [index, chunk] of part.chunks.entries()) {
-        if (index > 0) {
-            lines.push("---");
-            lines.push("");
-        }
-        lines.push(...buildChunkMarkdown(chunk));
+    for (const chunk of part.chunks) {
+        lines.push(...buildFileBlockMarkdown(chunk));
     }
     if (options.index) {
         lines.push(...buildIndexMarkdownLines(options.index, false));
@@ -253,23 +342,8 @@ function buildPromptMarkdown(params) {
 }
 function buildKnowledgeSourceMarkdown(part) {
     const lines = [`# Knowledge Source ${String(part.partNumber).padStart(3, "0")}`, ""];
-    for (const [index, chunk] of part.chunks.entries()) {
-        if (index > 0) {
-            lines.push("---", "");
-        }
-        lines.push(`## Source: ${chunk.relativePath}`, "", `- Source path: ${code(chunk.relativePath)}`);
-        if (chunk.chunkCount > 1) {
-            lines.push(`- Source chunk: ${chunk.chunkIndex} / ${chunk.chunkCount}`);
-            lines.push(`- Source lines: ${chunk.sourceStartLine ?? 0}-${chunk.sourceEndLine ?? 0}`);
-        }
-        lines.push("");
-        if (chunk.extension === "md") {
-            lines.push(chunk.content, "");
-        }
-        else {
-            const fence = fenceFor(chunk.content);
-            lines.push(`${fence}${languageFor(chunk.extension)}`, chunk.content, fence, "");
-        }
+    for (const chunk of part.chunks) {
+        lines.push(...buildFileBlockMarkdown(chunk));
     }
     return `${lines.join("\n")}\n`;
 }
@@ -432,7 +506,7 @@ const CLI_DEFAULT_MAX_CHARS = 120000;
 const CLI_DEFAULT_MAX_INPUT_FILE_BYTES = 1_000_000;
 const CLI_DEFAULT_FILENAME_PREFIX = "text-bundle";
 const CLI_DEFAULT_KNOWLEDGE_FILENAME_PREFIX = "knowledge";
-const CLI_VERSION = "1.5.1";
+const CLI_VERSION = "1.6.0";
 const SUPPORTED_ENCODINGS = new Set(["utf-8", "shift_jis"]);
 const DEFAULT_EXCLUDE_EXTENSIONS = [
     ".7z",

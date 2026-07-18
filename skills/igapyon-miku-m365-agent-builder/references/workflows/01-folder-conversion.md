@@ -11,6 +11,7 @@
 - 入力元を読み取り専用として扱う。
 - 出力は入力元とは別の新しいフォルダへ作る。
 - シンボリックリンク、隠しファイル、巨大ファイル、アーカイブは対象範囲を確認する。
+- `.env`と`.env.*`は資格情報を含む可能性があるため、内容を読み込まず必ず除外する。
 - パスワード付き、破損、未対応形式は無理に処理せず、要確認へ記録する。
 - 機密情報、個人情報、資格情報、秘密鍵などを検出した場合は、出力への複製を止めて要確認へ記録する。
 
@@ -18,14 +19,14 @@
 
 1. エージェントの目的、対象利用者、代表的な質問、正式資料、入力元、出力先を特定する。
 2. ファイルの相対パス、形式、サイズ、更新日時、推定テーマ、版、重複候補、読取可否を棚卸しする。
-3. `Include`、`Exclude`、`Convert first`、`Confirm`へ分類する。
+3. `Include`、`Exclude`、`Convert first`、`Confirm`へ分類する。`.env`と`.env.*`は必ず`Exclude`へ分類する。
 4. Office文書、PDF、画像など、`miku-text-bundle`が既定で除外する必要資料は、適切な変換手段でテキスト化して中間入力へ置く。
 5. 同梱`miku-text-bundle`を`--mode knowledge-source`と`--dry-run`で実行し、対象範囲と診断を確認する。
 6. dry-runに問題がなければ本実行し、番号付きMarkdownを`work/knowledge-markdown/`へ、管理用indexを`work/`へ生成する。
 7. 番号付きMarkdownだけを`miku-md2docx`で一対一変換し、最終DOCXを`upload/`直下へフラットに置く。
 8. DOCX本文に元相対パスとファイル境界が保持され、マシン固有の絶対パスやDOCX間の相対リンクへ依存していないことを確認する。
 9. 管理用indexからスキップ、警告、marker、旧生成物候補を確認する。
-10. Agent Builderの入力値と、人の判断が必要な事項を作る。
+10. Agent Builderの入力値と、人の判断が必要な事項を作る。`agent-builder-input.md`のKnowledge sources欄には、`upload/`を付けず、フラットに登録するDOCXのbasenameだけを記載する。Instructionsには、登録済みKnowledge sourcesを優先して回答根拠とし、根拠資料名を示し、情報が見つからない場合は推測しない方針を含める。
 
 目的が不明な場合は棚卸しまで進め、Knowledge sourcesの採否を確定しない。
 
@@ -34,7 +35,7 @@
 | Classification | Meaning |
 |---|---|
 | Include | knowledge-sourceモードの入力に含める |
-| Exclude | 一時ファイル、明白な重複、無関係資料など、理由を記録して除外する |
+| Exclude | `.env`、`.env.*`、一時ファイル、明白な重複、無関係資料など、理由を記録して除外する |
 | Convert first | 必要な非テキスト資料を検証可能な方法でテキスト化してから含める |
 | Confirm | 版、正確性、機密性、権限、読取可否など、人の判断を待つ |
 
@@ -45,6 +46,8 @@
 ## 完成条件
 
 - `agent-builder-input.md`がConfigure画面の項目順になっている。
+- `agent-builder-input.md`のKnowledge sources欄が`knowledge-NNN.docx`のようなbasenameだけを使い、`upload/knowledge-NNN.docx`を含まない。
+- Instructionsが登録済みKnowledge sourcesを回答根拠として優先し、使用した根拠資料名と、情報が見つからない場合の扱いを定めている。
 - `upload/`がDOCXだけのフラット構成になっている。
 - `upload/knowledge-NNN.docx`だけがKnowledge sources登録候補として示されている。
 - 中間Markdownと`knowledge-index.md`が`work/`へ分離されている。

@@ -8,35 +8,36 @@
 
 ## 必須条件
 
-- Node.js版v1.5.1を優先し、Node.jsが利用できない場合はJava版v1.5.0を使用する。
+- Node.js版v1.6.0を優先し、Node.jsが利用できない場合はJava版v1.6.0を使用する。
 - 実行前にランタイムの`--help`または`--version`を確認する。
 - `--mode knowledge-source`が利用できるv1.5.0以降を使用する。
 - 同梱ランタイムが未対応なら、handoffモードで代用せず更新が必要と報告する。
 - 入力ディレクトリ、出力ディレクトリ、文字コード、除外、サイズ上限を確認する。
+- `.env`と`.env.*`は必ず除外し、dry-runと本実行の収集対象に入れない。
 
 ## 標準実行
 
 最初にdry-runで収集件数、スキップ件数、無視件数、推定Part数を確認する。
 
 ```text
-node <skill-root>/runtime/miku-text-bundle-1.5.1.mjs \
+node <skill-root>/runtime/miku-text-bundle-1.6.0.mjs \
   --input <inputDir> \
   --output <outputDir> \
   --mode knowledge-source \
-  --max-chars 25000000 \
-  --max-input-file-bytes 100000000 \
+  --max-chars 66666666 \
+  --max-input-file-bytes 200000000 \
   --dry-run
 ```
 
 Node.jsが利用できない場合は、Java版を同じオプションで実行する。
 
 ```text
-java -jar <skill-root>/runtime/miku-text-bundle-java-1.5.0.jar \
+java -jar <skill-root>/runtime/miku-text-bundle-java-1.6.0.jar \
   --input <inputDir> \
   --output <outputDir> \
   --mode knowledge-source \
-  --max-chars 25000000 \
-  --max-input-file-bytes 100000000 \
+  --max-chars 66666666 \
+  --max-input-file-bytes 200000000 \
   --dry-run
 ```
 
@@ -51,7 +52,7 @@ java -jar <skill-root>/runtime/miku-text-bundle-java-1.5.0.jar \
 - `--add-exclude-directory "dir"`
 - `--verbose`
 
-標準の分割単位は100 MB（100,000,000 bytes）とし、UTF-8の1文字を最大4 bytesとして換算した25,000,000文字を`--max-chars`へ指定する。`--max-input-file-bytes 100000000`は単一入力ファイルの上限も同じ100 MBに揃える指定である。生成Markdownには見出しや出典情報も付加されるため、実行後は実サイズが上限内であることを確認する。Agent Builder側の制限が変更された場合は、最新仕様に合わせて両方の値を見直す。
+標準の分割単位は200 MB（200,000,000 bytes）とし、UTF-8の1文字を3 bytesとして換算した66,666,666文字（端数切り捨て）を`--max-chars`へ指定する。`--max-input-file-bytes 200000000`は単一入力ファイルの上限も同じ200 MBに揃える指定である。生成Markdownには見出しや出典情報も付加されるため、実行後は実サイズが上限内であることを確認する。Agent Builder側の制限が変更された場合は、最新仕様に合わせて両方の値を見直す。
 
 ## 成果物の役割
 
@@ -85,8 +86,8 @@ knowledge-index.md
 
 ## 上流仕様
 
-- [miku-text-bundle v1.5.1](https://github.com/igapyon/miku-text-bundle/releases/tag/v1.5.1)
-- [v1.5.0 release notes](https://github.com/igapyon/miku-text-bundle/blob/v1.5.1/docs/release-notes-v1.5.0.md)
-- [README](https://github.com/igapyon/miku-text-bundle/blob/v1.5.1/README.md)
+- [miku-text-bundle v1.6.0](https://github.com/igapyon/miku-text-bundle/releases/tag/v1.6.0)
+- [v1.5.0 release notes](https://github.com/igapyon/miku-text-bundle/blob/v1.6.0/docs/release-notes-v1.5.0.md)
+- [README](https://github.com/igapyon/miku-text-bundle/blob/v1.6.0/README.md)
 
-この資料は2026-07-17時点の上流v1.5.1を基準にする。実行時は同梱ランタイムの`--help`をCLI契約として優先する。
+この資料は2026-07-18時点の上流v1.6.0を基準にする。実行時は同梱ランタイムの`--help`をCLI契約として優先する。

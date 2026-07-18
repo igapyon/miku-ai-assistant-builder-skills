@@ -8,12 +8,12 @@ Markdownは中間成果物、DOCXは最終登録候補とする。Markdown-to-Of
 
 ## ランタイム
 
-バックエンド指定がなければ、単一ファイルへ依存をバンドルしたNode.js CLI版`miku-md2docx-0.9.2.mjs`を優先する。Node.jsが利用できない場合はJava版`miku-md2docx-java-0.9.1.jar`を使用する。どちらも外部依存のダウンロードやネットワーク接続を要求しない。
+バックエンド指定がなければ、単一ファイルへ依存をバンドルしたNode.js CLI版`miku-md2docx-1.0.1.mjs`を優先する。Node.jsが利用できない場合はJava版`miku-md2docx-java-1.0.1.jar`を使用する。どちらも外部依存のダウンロードやネットワーク接続を要求しない。
 
 実行前に`--help`と`--version`でCLI契約を確認する。通常変換では入力Markdownと主出力`--out`だけを指定し、summaryなどの追加成果物を勝手に生成しない。
 
 ```text
-node <skill-root>/runtime/miku-md2docx-0.9.2.mjs \
+node <skill-root>/runtime/miku-md2docx-1.0.1.mjs \
   work/knowledge-markdown/knowledge-001.md \
   --out upload/knowledge-001.docx
 ```
@@ -21,7 +21,7 @@ node <skill-root>/runtime/miku-md2docx-0.9.2.mjs \
 Java版を使用する場合も、入力と主出力だけを指定する。
 
 ```text
-java -jar <skill-root>/runtime/miku-md2docx-java-0.9.1.jar \
+java -jar <skill-root>/runtime/miku-md2docx-java-1.0.1.jar \
   work/knowledge-markdown/knowledge-001.md \
   --out upload/knowledge-001.docx
 ```
