@@ -1,6 +1,6 @@
 ---
 name: igapyon-miku-m365-agent-builder
-description: Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備し、雑多な既存フォルダを二段階でAgent Builder配備用フォルダへ変換するスキル。第1段階で自動処理対象を選定して人間の資料追加を待ち、第2段階で手動資料数から残りのファイル枠を求め、同梱`miku-text-bundle`による自動バンドル、同梱`miku-md2docx`によるMarkdownのDOCX化、準備済みOffice文書の統合を行う。Copilot Studio の作成権限を持たない利用者向けの Agent Builder が対象。`igapyon-miku-m365-agent-builder`または`miku-m365-agent-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換やその再開が依頼されたときに使用する。Copilot Studio 固有のエージェント作成には使用しない。
+description: Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備し、雑多な既存フォルダを二段階でAgent Builder配備用フォルダへ変換するスキル。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階で手動資料数から残りのファイル枠を求め、自動バンドル、同梱`miku-md2docx`によるMarkdownのDOCX化、準備済みOffice文書の統合を行う。Copilot Studio の作成権限を持たない利用者向けの Agent Builder が対象。`igapyon-miku-m365-agent-builder`または`miku-m365-agent-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換やその再開が依頼されたときに使用する。Copilot Studio 固有のエージェント作成には使用しない。
 ---
 
 # Igapyon Miku M365 Agent Builder
@@ -43,13 +43,13 @@ Microsoft 365 Copilot の Agent Builder 向け入力データを作成する。
 
 新規変換と再開を混同しない。出力先に`work/preparation-status.md`があり、状態が`awaiting-manual-input`なら第2段階として再開する。新規変換では次の第1段階だけを実行し、同じターンで第2段階へ進まない。
 
-### 第1段階: 自動処理対象の選定と準備待ち
+### 第1段階: 自動テキスト入力の確定と準備待ち
 
 1. 利用者の目的、想定利用者、代表的な質問、入力元、出力先を確認する。不明点は推測で確定せず、作業を進められる範囲では仮定として記録する。
 2. [制限・設計上の注意](references/platform/02-limitations.md)を使い、Agent Builderへの適合性を判定する。適合度が低い要求は「案内」「情報整理」「判断材料の提示」「下書き作成」へ調整する。
-3. 原本を変更せずに棚卸しする。Knowledge sourcesへ含める自動処理対象、除外、文字コード、単一ファイル上限を決める。`.env`と`.env.*`は内容にかかわらず必ず除外する。
-4. Office文書、PDF、画像など、自動処理対象だが`miku-text-bundle`が既定で除外する資料は、検証可能な方法でテキスト化する計画または専用の中間入力へ整理する。この時点ではバンドルを生成しない。
-5. 人間が追加資料の原本を置く空の`manual-input/`と、再開に必要な`work/preparation-status.md`を作る。状態は`awaiting-manual-input`とし、入力元、出力先、自動処理対象、除外、実行条件、警告、再開方法を記録する。
+3. 原本を変更せずに棚卸しする。入力元にある`.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルは原則すべて自動処理対象とする。内容の関連性、旧版、重複の推定だけを理由に自動除外しない。`.env`と`.env.*`、秘密情報、出力先、明示的に指定された除外、ランタイムが技術的に扱えないファイルだけを理由付きで除外または確認待ちにする。
+4. DOCX、PPTX、XLSX、PDF、画像などの非テキスト資料を自動でテキスト化せず、`miku-text-bundle`の自動処理対象に含めない。Knowledge sourceとして必要なら、人が準備して`manual-input/`へ置く候補として記録する。この時点ではバンドルを生成しない。
+5. 人間が追加資料の原本を置く空の`manual-input/`と、再開に必要な`work/preparation-status.md`を作る。状態は`awaiting-manual-input`とし、入力元、出力先、自動処理対象、理由付き除外、確認待ち、実行条件、警告、再開方法を記録する。
 6. `manual-input/`へ追加可能なMarkdown、DOCX、PPTX、XLSXなど、人力資料は最大19件であること、原本を変更しない規則を利用者へ説明する。追加資料がない場合も明示的な確認を求める。
 7. 人間による追加資料の準備待ちとして必ず停止する。`miku-text-bundle`のdry-runと本実行、番号付きMarkdownのDOCX変換、`upload/`の構成、`agent-builder-input.md`の生成はまだ行わない。
 

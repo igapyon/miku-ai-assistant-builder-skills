@@ -139,6 +139,46 @@ test("manual files determine the remaining automatic upload budget", () => {
   assert.match(bundleReference, /本実行結果が自動生成枠を超えた場合/);
 });
 
+test("automatic processing includes eligible text through miku-text-bundle by default", () => {
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+  const budget = fs.readFileSync(
+    path.resolve(skillRoot, "references/knowledge-sources/06-upload-file-budget.md"),
+    "utf8"
+  );
+  const bundleReference = fs.readFileSync(
+    path.resolve(skillRoot, "references/knowledge-sources/03-miku-text-bundle.md"),
+    "utf8"
+  );
+
+  assert.match(skillMd, /\.md.*\.mjs.*\.js.*原則すべて自動処理対象/);
+  assert.match(workflow, /既定で`Auto include`/);
+  assert.match(workflow, /旧版、重複候補だけを理由に対象を絞り込まない/);
+  assert.match(budget, /関連性、旧版、重複の推定だけで`N`を減らさない/);
+  assert.match(bundleReference, /原則すべて収集対象/);
+  assert.doesNotMatch(workflow, /Convert first/);
+});
+
+test("non-text files are not automatically converted into bundle inputs", () => {
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+  const bundleReference = fs.readFileSync(
+    path.resolve(skillRoot, "references/knowledge-sources/03-miku-text-bundle.md"),
+    "utf8"
+  );
+
+  assert.match(skillMd, /非テキスト資料を自動でテキスト化せず/);
+  assert.match(workflow, /非テキスト資料を自動変換せず/);
+  assert.match(workflow, /`Manual candidate`/);
+  assert.match(bundleReference, /自動でテキスト化.*しない/);
+});
+
 test("deployment stays a human-controlled internal handoff", () => {
   const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
   const workflow = fs.readFileSync(
