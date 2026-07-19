@@ -29,6 +29,17 @@ Agent Builderは、基本として次の流れに適する。
 
 これらの件数は変更されやすい。入力データを作る時点で件数が重要なら、利用者の実画面または最新のMicrosoft公式情報を確認する。
 
+### 端末からアップロードする埋め込みファイル
+
+- 現行公式情報では、Agent Builderへ端末から直接アップロードできる埋め込みファイルは最大20件。
+- 対応形式は`.doc`、`.docx`、`.pdf`、`.ppt`、`.pptx`、`.txt`、`.xls`、`.xlsx`。`.html`はSharePointでのみ対応する。
+- 埋め込みファイルの上限は、`.doc`、`.docx`、`.pdf`、`.ppt`、`.pptx`、`.txt`が512 MB、`.xls`と`.xlsx`が30 MB。
+- Excelは一つのワークシートに情報をまとめる方が回答品質を得やすいと案内されている。
+- パスワード保護、特定の暗号化、抽出権限のない秘密度ラベルなどは利用できない場合がある。
+- 埋め込みファイルの利用にはMicrosoft 365 Copilotライセンスまたは従量課金が必要で、GCC環境では対応しない。
+
+このスキルでは、手動追加Markdownを直接登録せずDOCXへ変換する。DOCX、PPTX、XLSXなどの準備済み資料は、実行時点の公式情報と利用者の実画面で対応を確認してから登録候補にする。
+
 ## ライセンス、権限、管理者設定への依存
 
 - 利用者が閲覧権限を持つ情報だけが検索対象になる。
@@ -86,4 +97,4 @@ Instructionsで望ましい動作を指示することと、その動作をシ�
 - [Agents for Microsoft 365 Copilot](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/agents-overview)
 - [Agent Builder regional availability and language support](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/agent-builder-regional-availability)
 
-この資料は2026-07-16時点で整理した。製品更新やテナント差異があるため、変更されやすい制限値は最新の公式情報と実画面を優先する。
+この資料は2026-07-19時点で整理した。製品更新やテナント差異があるため、変更されやすい制限値は最新の公式情報と実画面を優先する。

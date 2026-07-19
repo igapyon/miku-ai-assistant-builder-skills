@@ -1,4 +1,4 @@
 interface:
   display_name: "Miku M365 Agent Builder"
-  short_description: "Agent Builder向け入力と登録用DOCXを作成"
-  default_prompt: "Use $igapyon-miku-m365-agent-builder to prepare copy-ready input data or convert an existing folder into flat upload-ready DOCX Knowledge sources using igapyon-miku-text-bundle and miku-md2docx."
+  short_description: "二段階でAgent Builder向け配備資料を作成"
+  default_prompt: "Use $igapyon-miku-m365-agent-builder to prepare or resume a two-stage folder conversion that combines generated Knowledge source DOCX files with human-provided Markdown and Office documents for Microsoft 365 Copilot Agent Builder."

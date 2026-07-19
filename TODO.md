@@ -43,8 +43,11 @@
 - [x] フォルダ変換時は未確定事項を`items-to-confirm.md`へ記録する方針を決める。
 - [x] 雑多なフォルダの棚卸しと`miku-text-bundle` knowledge-sourceモードの連携を定義する。
 - [x] `miku-md2docx`による番号付きMarkdownから最終DOCXへの変換を定義する。
-- [x] 登録用`upload/`をDOCXだけのフラット構成にする。
+- [x] 登録用`upload/`を検証済みKnowledge source候補だけのフラット構成にする。
 - [x] ソースコードの相対パスとファイル境界をDOCX本文に保持する方針を定義する。
+- [x] フォルダ変換を、自動処理、手動資料追加、再開後の最終化からなる二段階方式にする。
+- [x] `preparation-status.md`で別セッションから再開する方針を定義する。
+- [x] 手動追加MarkdownのDOCX変換と、準備済みDOCX、PPTX、XLSXの統合を定義する。
 - [ ] Knowledge sources 候補の評価方法を定義する。
 - [ ] Capabilities の候補提示と利用可否確認の扱いを定義する。
 - [ ] 完成条件とセルフチェック項目を定義する。
