@@ -248,6 +248,22 @@ test("Gem deployment supports explicit Markdown or DOCX selection", () => {
   assert.match(workflow, /Gemでは20件を流用しない/);
 });
 
+test("beta status is visible in primary user-facing descriptions", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const openaiYaml = fs.readFileSync(
+    path.resolve(skillRoot, "agents/openai.yaml"),
+    "utf8"
+  );
+
+  assert.match(readme, /本スキル全体はベータ版/);
+  assert.match(skillMd, /description: ベータ版/);
+  assert.match(skillMd, /本スキル全体はベータ版/);
+  assert.match(openaiYaml, /display_name: "Miku AI Assistant Builder \(Beta\)"/);
+  assert.match(openaiYaml, /short_description: "ベータ版:/);
+  assert.match(openaiYaml, /Google Gemini Gem support is early access/);
+});
+
 test("file-backed deployment requires an eligible platform environment", () => {
   const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
   const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");

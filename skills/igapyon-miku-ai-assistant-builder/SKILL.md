@@ -1,9 +1,11 @@
 ---
 name: igapyon-miku-ai-assistant-builder
-description: Microsoft 365 Copilot内の軽量なAgent Builderに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Google GeminiのGemには早期アクセスとして軽量対応する。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階ではAgent Builder向けMarkdownをDOCX化し、Gem早期アクセスではMarkdownのまま使うか同梱`miku-md2docx`でDOCX化するかを利用者が選ぶ。ファイル添付を利用できるライセンス、アカウント、管理者設定が前提。`igapyon-miku-ai-assistant-builder`または`miku-ai-assistant-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換やその再開が依頼されたときに使用する。Copilot Studio固有のエージェント作成には使用しない。
+description: ベータ版。Microsoft 365 Copilot内の軽量なAgent Builderに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Google GeminiのGemには早期アクセスとして軽量対応する。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階ではAgent Builder向けMarkdownをDOCX化し、Gem早期アクセスではMarkdownのまま使うか同梱`miku-md2docx`でDOCX化するかを利用者が選ぶ。ファイル添付を利用できるライセンス、アカウント、管理者設定が前提。`igapyon-miku-ai-assistant-builder`または`miku-ai-assistant-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換やその再開が依頼されたときに使用する。Copilot Studio固有のエージェント作成には使用しない。
 ---
 
 # Igapyon Miku AI Assistant Builder
+
+> **Beta:** 本スキル全体はベータ版であり、仕様と出力は今後の検証・調整によって変更される可能性がある。Microsoft 365 Copilot Agent Builderを主対象とし、Google Gemini Gem対応は早期アクセスとして扱う。
 
 作業時は、最初に同じディレクトリの `index.json` を読み、必要な参照資料を選ぶ。
 
