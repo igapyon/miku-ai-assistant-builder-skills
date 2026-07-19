@@ -19,6 +19,7 @@ test("generated index is required and current", () => {
     "references/instructions/01-input-fields.md",
     "references/knowledge-sources/03-miku-text-bundle.md",
     "references/knowledge-sources/05-miku-md2docx.md",
+    "references/knowledge-sources/06-upload-file-budget.md",
     "references/runtime-artifacts.md",
     "references/platform/01-baseline.md",
     "references/platform/02-limitations.md",
@@ -106,6 +107,36 @@ test("folder conversion stops after preparation and resumes from persistent stat
   assert.match(workflow, /第1段階では次を行わない/);
   assert.match(workflow, /番号付きMarkdownのDOCX変換/);
   assert.match(workflow, /追加資料がない場合も利用者の明示的な確認/);
+});
+
+test("manual files determine the remaining automatic upload budget", () => {
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+  const budget = fs.readFileSync(
+    path.resolve(skillRoot, "references/knowledge-sources/06-upload-file-budget.md"),
+    "utf8"
+  );
+  const bundleReference = fs.readFileSync(
+    path.resolve(skillRoot, "references/knowledge-sources/03-miku-text-bundle.md"),
+    "utf8"
+  );
+
+  assert.match(skillMd, /第1段階では`miku-text-bundle`を実行せず/);
+  assert.match(skillMd, /人力資料は最大19件/);
+  assert.match(skillMd, /A = 20 - M/);
+  assert.match(skillMd, /T = min\(N, A\)/);
+  assert.match(skillMd, /max\(120000, ceil\(C \/ T\)\)/);
+  assert.match(workflow, /空き枠を埋めるための分割は行わない/);
+  assert.match(workflow, /最終候補総数が20以下/);
+  assert.match(budget, /M`が20以上.*19件以下への削減/);
+  assert.match(budget, /`N`が0.*停止/);
+  assert.match(budget, /推定Knowledgeファイル数が`A`を超える場合/);
+  assert.match(budget, /Microsoftの製品制限ではない/);
+  assert.match(bundleReference, /<calculatedMaxChars>/);
+  assert.match(bundleReference, /本実行結果が自動生成枠を超えた場合/);
 });
 
 test("deployment stays a human-controlled internal handoff", () => {

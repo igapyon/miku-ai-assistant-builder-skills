@@ -2,7 +2,7 @@
 
 ## 目的
 
-文書、メモ、ソースコード、下書き、旧版などが混在するフォルダを自動処理したあと、人間が準備したMarkdownやOffice文書を追加し、Microsoft 365 Copilot Agent Builderへ設定しやすい単一の配備用フォルダへ統合する。
+文書、メモ、ソースコード、下書き、旧版などが混在するフォルダから自動処理対象を選定したあと、人間が準備したMarkdownやOffice文書を追加し、その件数に応じた残り枠で自動バンドルを生成してMicrosoft 365 Copilot Agent Builderへ設定しやすい単一の配備用フォルダへ統合する。
 
 これは専用インポート形式への変換ではない。Configure画面へコピーする入力値と、Knowledge sourcesとして登録する候補を人が確認できる受け渡し形式とする。
 
@@ -36,21 +36,22 @@ new
 - 出力basenameの競合は、変換やコピーより前に検出する。自動改名や上書きで解決しない。
 - `upload/`を変更する前に最終出力計画を確定する。途中失敗時に既存の正常な`upload/`を部分更新しない。
 
-## 第1段階: 自動処理と準備待ち
+## 第1段階: 自動処理対象の選定と準備待ち
 
 1. エージェントの目的、対象利用者、代表的な質問、正式資料、入力元、出力先を特定する。
 2. ファイルの相対パス、形式、サイズ、更新日時、推定テーマ、版、重複候補、読取可否を棚卸しする。
 3. `Include`、`Exclude`、`Convert first`、`Confirm`へ分類する。`.env`と`.env.*`は必ず`Exclude`へ分類する。
-4. Office文書、PDF、画像など、`miku-text-bundle`が既定で除外する必要資料は、検証可能な方法でテキスト化して中間入力へ置く。
-5. 同梱`miku-text-bundle`を`--mode knowledge-source`と`--dry-run`で実行し、対象範囲と診断を確認する。
-6. dry-runに問題がなければ本実行し、番号付きMarkdownを`work/knowledge-markdown/`へ、管理用indexを`work/knowledge-index.md`へ配置する。
-7. 空の`manual-input/`を作る。既存の`manual-input/`がある場合は内容を削除せず、新規変換として続行しない。
-8. `work/preparation-status.md`を作り、状態を`awaiting-manual-input`にする。
-9. 利用者へ`manual-input/`の場所、追加可能な形式、原本を変更しない規則、再開方法を伝える。
-10. 追加資料がない場合も利用者の明示的な確認を待ち、ここで停止する。
+4. Office文書、PDF、画像など、自動処理対象だが`miku-text-bundle`が既定で除外する必要資料は、検証可能な方法でテキスト化する計画または専用の中間入力へ整理する。
+5. 自動処理対象の相対パス、分類、変換の有無、文字コード、除外条件を記録する。この段階では分割数を確定せず、`miku-text-bundle`を実行しない。
+6. 空の`manual-input/`を作る。既存の`manual-input/`がある場合は内容を削除せず、新規変換として続行しない。
+7. `work/preparation-status.md`を作り、状態を`awaiting-manual-input`にする。
+8. 利用者へ`manual-input/`の場所、追加可能な形式、人力資料は最大19件であること、原本を変更しない規則、再開方法を伝える。
+9. 追加資料がない場合も利用者の明示的な確認を待ち、ここで停止する。
 
 第1段階では次を行わない。
 
+- `miku-text-bundle`のdry-runと本実行
+- 番号付きMarkdownの生成
 - 番号付きMarkdownのDOCX変換
 - `manual-input/`の資料変換またはコピー
 - 最終`upload/`の構成
@@ -72,12 +73,15 @@ new
 - Text bundle mode: knowledge-source
 - Filename prefix: [prefix]
 - Encoding: [文字コード]
-- Max chars: [値]
 - Max input file bytes: [値]
 
-## Generated intermediate files
+## Selected automatic inputs
 
-- work/knowledge-markdown/knowledge-001.md
+- [入力元基準の相対パス]
+
+## Automatic input preparation
+
+- [変換計画、専用中間入力、またはNone]
 
 ## Diagnostics
 
@@ -96,6 +100,8 @@ Place optional source files in manual-input/, then invoke this skill again with 
 
 - Markdownは第2段階で同じbasenameのDOCXへ変換する。
 - DOCX、PPTX、XLSXなど、現行Agent Builderが埋め込みファイルとして受け付ける準備済みOffice文書は、検証後にbasenameを維持して最終候補へ含める。
+- 手動Markdownは変換後のDOCX 1件として数え、準備済みOffice文書と合わせて最大19件とする。
+- 19件は自動生成Knowledge sourceを最低1件確保するための上限である。
 - 対応可否が不明な形式は自動採用しない。
 - サブディレクトリを許可する場合も、最終`upload/`はフラットにするため、全候補のbasename競合を確認する。
 - `manual-input/`のファイルをその場で変換、編集、改名しない。
@@ -103,23 +109,29 @@ Place optional source files in manual-input/, then invoke this skill again with 
 ## 第2段階: 再開と最終化
 
 1. `work/preparation-status.md`の状態が`awaiting-manual-input`であることを確認する。
-2. 記録された入力元、出力先、中間生成物、実行条件と、現在のファイルを照合する。欠落や差異は推測で補わず停止する。
+2. 記録された入力元、出力先、自動処理対象、実行条件と、現在のファイルを照合する。欠落や差異は推測で補わず停止する。
 3. 利用者が追加資料の準備完了、または追加資料なしを明示していることを確認する。
 4. `manual-input/`を読み取り専用で棚卸しし、形式、サイズ、読取可否、機密性、パスワード保護を確認する。
-5. 次の最終basenameをすべて列挙し、重複がないことを変換やコピーの前に確認する。
-   - `work/knowledge-markdown/*.md`をDOCX化したbasename
-   - `manual-input/`のMarkdownをDOCX化したbasename
-   - 検証済みの準備済みOffice文書のbasename
-6. 競合、未対応形式、確認待ちがあれば`items-to-confirm.md`へ記録し、`upload/`を変更せず停止する。
-7. 状態を`finalizing`へ更新する。
-8. 番号付きMarkdownと手動Markdownを`miku-md2docx`で一対一変換する。変換先は既存の正常な`upload/`とは別の一時的な出力場所とする。
-9. 準備済みOffice文書を一時的な出力場所へコピーし、原本とのサイズまたはハッシュ一致を確認する。
-10. DOCXの開封可否、元相対パス、ファイル境界、リンク、秘密情報と、Office文書の読取可否を検証する。
-11. すべての検証に成功した場合だけ、最終`upload/`を登録候補のフラット構成へ置き換える。
-12. `upload/`の実在ファイルからKnowledge sources一覧を作り、`agent-builder-input.md`へbasenameだけを記載する。
-13. `upload/`の未参照ファイルと`agent-builder-input.md`の参照切れがないことを双方向に確認する。
-14. `items-to-confirm.md`を確定し、状態を`finalized`へ更新する。
-15. 利用者へ`upload/`の登録候補と確認事項を示す。
+5. 手動Markdownを変換後のDOCX 1件として数え、検証済みの準備済みOffice文書と合わせた手動資料数`M`を確定する。`M`が20以上なら、19件以下への削減を求めて停止する。
+6. 自動生成枠`A = 20 - M`を求める。選択済みの適格な自動入力ファイル数`N`が0なら停止し、目標自動出力数を`T = min(N, A)`とする。
+7. 選択済み自動入力の合計文字数`C`を求め、`maxChars = max(120000, ceil(C / T))`を初期値とする。120,000文字は運用上の下限であり、Microsoftの制限値ではない。
+8. 同梱`miku-text-bundle`をknowledge-sourceモードでdry-runする。収集件数が`N`と一致し、推定Knowledgeファイル数が`A`以下になるまで、対象条件の修正または`maxChars`の増加とdry-runを繰り返す。推定数が`A`未満でも、空き枠を埋めるための分割は行わない。
+9. 条件を満たした値で本実行し、番号付きMarkdownを`work/knowledge-markdown/`へ、管理用indexを`work/knowledge-index.md`へ配置する。本実行の番号付きMarkdownが`A`を超えた場合は最終化せず、より大きい`maxChars`で再生成する。
+10. 次の最終basenameをすべて列挙し、重複がないことを変換やコピーの前に確認する。
+    - `work/knowledge-markdown/*.md`をDOCX化したbasename
+    - `manual-input/`のMarkdownをDOCX化したbasename
+    - 検証済みの準備済みOffice文書のbasename
+11. 競合、未対応形式、確認待ちがあれば`items-to-confirm.md`へ記録し、`upload/`を変更せず停止する。
+12. 状態を`finalizing`へ更新し、`M`、`A`、`N`、`T`、`C`、採用した`maxChars`、dry-run推定数、本実行生成数を記録する。
+13. 番号付きMarkdownと手動Markdownを`miku-md2docx`で一対一変換する。変換先は既存の正常な`upload/`とは別の一時的な出力場所とする。
+14. 準備済みOffice文書を一時的な出力場所へコピーし、原本とのサイズまたはハッシュ一致を確認する。
+15. DOCXの開封可否、元相対パス、ファイル境界、リンク、秘密情報と、Office文書の読取可否を検証する。
+16. 自動生成物と手動資料を合わせた最終候補総数が20以下であることを確認する。
+17. すべての検証に成功した場合だけ、最終`upload/`を登録候補のフラット構成へ置き換える。
+18. `upload/`の実在ファイルからKnowledge sources一覧を作り、`agent-builder-input.md`へbasenameだけを記載する。
+19. `upload/`の未参照ファイルと`agent-builder-input.md`の参照切れがないことを双方向に確認する。
+20. `items-to-confirm.md`を確定し、状態を`finalized`へ更新する。
+21. 利用者へ`upload/`の登録候補、手動資料数、自動生成数、合計数と確認事項を示す。
 
 ## 分類
 
@@ -140,6 +152,7 @@ Place optional source files in manual-input/, then invoke this skill again with 
 ## 完成条件
 
 - 第1段階が`awaiting-manual-input`で停止し、同じターンで第2段階へ進んでいない。
+- 第1段階では自動処理対象だけが確定し、`miku-text-bundle`がまだ実行されていない。
 - `preparation-status.md`から別セッションで再開できる。
 - `manual-input/`の原本が変更されていない。
 - `agent-builder-input.md`がConfigure画面の項目順になっている。
@@ -147,6 +160,9 @@ Place optional source files in manual-input/, then invoke this skill again with 
 - `upload/`が登録候補だけのフラット構成になっている。
 - 自動生成Markdownと手動Markdownが対応するDOCXへ変換されている。
 - 検証済みの準備済みOffice文書がbasenameを維持している。
+- 手動資料が19件以下で、自動生成Knowledge sourceが最低1件ある。
+- 自動生成数が`A = 20 - M`以下で、最終登録候補総数が20以下である。
+- `N`が自動生成枠より少ない場合、空き枠を埋めるための不要な分割をしていない。
 - 中間Markdown、管理用index、状態ファイルが`work/`へ分離されている。
 - InstructionsとKnowledge sourcesが混在していない。
 - スキップ、旧版、重複、矛盾、読取不能、未対応形式、機密情報が無整理で残っていない。
