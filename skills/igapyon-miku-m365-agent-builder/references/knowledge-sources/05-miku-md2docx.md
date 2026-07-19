@@ -2,7 +2,7 @@
 
 ## 位置づけ
 
-`miku-text-bundle --mode knowledge-source`が生成した番号付きMarkdownを、Microsoft 365 Copilot Agent Builderへ登録するDOCXへ変換する。変換には本スキルに同梱した`miku-md2docx`を使用する。
+`miku-text-bundle --mode knowledge-source`が生成した番号付きMarkdownと、利用者が`manual-input/`へ追加したMarkdownを、Microsoft 365 Copilot Agent Builderへ登録するDOCXへ変換する。変換には本スキルに同梱した`miku-md2docx`を使用する。
 
 Markdownは中間成果物、DOCXは最終登録候補とする。Markdown-to-Office変換は実験的であり、レイアウト忠実性を前提にしない。Knowledge sourceとして本文、見出し、コード、相対パスを読めることを優先する。
 
@@ -28,13 +28,25 @@ java -jar <skill-root>/runtime/miku-md2docx-java-1.0.1.jar \
 
 番号付きMarkdownを一対一で変換し、basenameを維持する。
 
+手動Markdownも同じ規則で変換する。原本は`manual-input/`に残し、直接書き換えない。
+
+```text
+node <skill-root>/runtime/miku-md2docx-1.0.1.mjs \
+  manual-input/additional-guide.md \
+  --out <temporary-output>/additional-guide.docx
+```
+
+第1段階では変換しない。利用者が追加資料の準備完了または追加資料なしを明示し、`work/preparation-status.md`から第2段階を再開した後だけ変換する。
+
 ## 出力規則
 
-- 最終DOCXを`upload/`直下へフラットに置く。
+- 変換結果を一時的な出力場所で検証し、すべて成功した場合だけ最終`upload/`直下へフラットに置く。
 - `knowledge-index.md`、`agent-builder-input.md`、`items-to-confirm.md`をDOCX化しない。
-- `upload/`にはAgent Builderへ登録するDOCX以外を置かない。
+- `preparation-status.md`をDOCX化しない。
+- `upload/`にはAgent Builderへ登録する自動生成DOCX、手動Markdownから変換したDOCX、検証済みの準備済みOffice文書以外を置かない。
 - 同名を避けるため、安定した番号と短いテーマ名を使える。例: `knowledge-003-services.docx`。
 - 変換前後の対応をbasenameで追跡できるようにする。
+- 変換後のDOCXと準備済みOffice文書のbasenameを事前に列挙し、大文字小文字を区別しない衝突があれば変換前に停止する。
 
 ## パスと参照
 
@@ -59,4 +71,5 @@ java -jar <skill-root>/runtime/miku-md2docx-java-1.0.1.jar \
 - ファイル境界が失われていない。
 - 絶対パス、秘密情報、不要なローカル情報がない。
 - DOCX間の相対リンクへ依存していない。
-- `upload/`がDOCXだけのフラット構成になっている。
+- `upload/`が検証済みの登録候補だけのフラット構成になっている。
+- `manual-input/`のMarkdown原本が変換前後で変更されていない。

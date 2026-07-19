@@ -4,6 +4,8 @@
 
 Microsoft 365 Copilot 内から利用する軽量な Agent Builder を対象にする。主な利用者は、Copilot Studio の作成権限を持たず、Microsoft 365 の業務領域内で簡易なエージェントを作成する人とする。
 
+このスキルが準備するデータは、社内や組織テナント内など、利用者が管理する閉じたAgent Builder環境への配備を前提にする。一般公開Webサイトや公開リポジトリへ生成物を公開する用途は対象にしない。
+
 Microsoft 365 Copilot ライセンスには一定範囲の Copilot Studio 利用権が含まれる場合があるが、このスキルでは Copilot Studio の構築画面や高度な機能を対象にしない。利用者が実際に使用する画面と管理者設定を優先して判断する。
 
 ## Agent Builder の位置づけ
@@ -30,6 +32,7 @@ Microsoft 365 Copilot ライセンスには一定範囲の Copilot Studio 利用
 テナントや時点によって、SharePoint、OneDrive上のファイル、アップロードファイル、公開Webサイト、Teamsの情報、管理者が有効にしたMicrosoft 365 Copilot connectorsなどを利用できる場合がある。
 
 - 利用者本人に閲覧権限がある情報だけを前提にする。
+- Agent Builderの共有範囲と、共有先利用者がKnowledge sourcesへアクセスできる範囲を配備前に確認する。
 - 指定したKnowledge sourcesを優先する設定があっても、一般知識を完全に遮断できるとは限らない。
 - 厳密な情報源限定や高度な制御が必要な場合は、軽量なAgent Builderの範囲を超える可能性がある。
 

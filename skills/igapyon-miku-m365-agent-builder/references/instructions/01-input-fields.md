@@ -102,10 +102,16 @@ Knowledge sourcesそのものをInstructionsに埋め込むのではなく、設
 | Source | Type | Purpose | Confirmed |
 |---|---|---|---|
 | knowledge-001.docx | File | [何を回答するために使うか] | [Yes / No] |
+| official-document.docx | File | [手動追加資料の用途] | [Yes / No] |
+| reference.pptx | File | [手動追加資料の用途] | [Yes / No] |
+| data.xlsx | File | [手動追加資料の用途] | [Yes / No] |
 ```
 
 - ローカル配備用の`upload/`を付けず、Agent Builderへ登録するbasenameだけを記載する。
 - `upload/knowledge-001.docx`ではなく`knowledge-001.docx`と記載する。
+- 自動生成DOCX、手動Markdownから変換したDOCX、検証済みの準備済みOffice文書を同じ表で扱う。
+- 表を先に作ってファイルを合わせるのではなく、最終`upload/`に実在するファイルから表を作る。
+- 表のSourceから`upload/`への参照切れと、`upload/`にある未記載ファイルを双方向に確認する。
 - 関連性の高い情報源だけを選ぶ。
 - 文書は適度な大きさで、対象テーマが明確なものを優先する。
 - 古い情報、重複、矛盾する文書を無整理のまま追加しない。

@@ -4,6 +4,8 @@
 
 Copilot Studio 固有のエージェント構築ではなく、Microsoft 365 Copilot 内の軽量な Agent Builder を対象とします。
 
+生成する配備データは、社内や組織テナント内などの閉じたAgent Builder環境へ人が設定するためのものです。このスキルはAgent Builderへのアップロード、共有設定、外部Webや公開リポジトリへの公開を行いません。
+
 ## Repository shape
 
 スキルの正本は次のディレクトリです。
@@ -37,6 +39,16 @@ npm run verify:reproducible
 
 ZIP は Agent home 直下へ展開する形式で、内部のスキルは `skills/igapyon-miku-m365-agent-builder/` に配置されます。
 
+## 二段階のフォルダ変換
+
+既存フォルダの変換は、人間が追加資料を準備できるよう二段階で行います。
+
+1. 対象フォルダを棚卸しし、`miku-text-bundle --mode knowledge-source`で中間Markdownを生成する。
+2. `manual-input/`への追加資料の準備待ちで停止する。
+3. スキルを再度起動し、手動MarkdownのDOCX変換、準備済みOffice文書の検証、最終`upload/`と`agent-builder-input.md`の生成を行う。
+
+`work/preparation-status.md`が別セッションからの再開状態を保持します。`manual-input/`の人間管理原本は変更しません。
+
 ## Agent Builderへの配備データの役割
 
 Agent Builderを動作させるための「起動用DOCX」は不要です。エージェントの目的、振る舞い、処理手順、禁止事項、回答形式は、`agent-builder-input.md`からConfigure画面のInstructionsなどの対応する入力欄へ転記します。利用者の質問が実際の動作のきっかけとなり、Starter promptsは会話を始めるための入力例です。
@@ -45,7 +57,8 @@ Knowledge sourceとして登録するDOCXは、エージェントを起動した
 
 - `agent-builder-input.md`: Configure画面への転記用。DOCX化せず、Knowledge sourceへ登録しません。
 - `items-to-confirm.md`: 配備前に人が判断する確認事項。DOCX化せず、Knowledge sourceへ登録しません。
-- `upload/knowledge-NNN.docx`: 回答根拠となる事実資料。Knowledge sourceへの登録候補です。
+- `manual-input/`: 人間が追加するMarkdown、DOCX、PPTX、XLSXなどの原本。配備先ではありません。
+- `upload/`: 自動生成DOCX、手動Markdownから変換したDOCX、検証済みの準備済みOffice文書。Knowledge sourceへの最終登録候補です。
 
 `agent-builder-input.md`のKnowledge sources欄には、Agent Builder上で見えるフラットな登録名だけを記載します。ローカル配備フォルダの`upload/`は運搬・作業用であり、Agent Builderへ登録した後の参照名には含まれません。
 
