@@ -1,0 +1,4 @@
+interface:
+  display_name: "Miku AI Assistant Builder"
+  short_description: "二段階でAgent Builder向け配備資料を作成"
+  default_prompt: "Use $igapyon-miku-ai-assistant-builder to prepare or resume a two-stage folder conversion. Include all eligible text files through miku-text-bundle by default, wait for human-provided Markdown and Office documents, then fit generated Knowledge source DOCX files into the remaining Microsoft 365 Copilot Agent Builder upload slots."

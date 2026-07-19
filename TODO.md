@@ -5,6 +5,7 @@
 このリポジトリは、Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備する Agent Skill の作業中リポジトリである。
 
 - Copilot Studio 固有のエージェント構築は対象外とする。
+- 将来は、Microsoft 365 Copilot の Agent Builder に加えて、Google Gemini の Gem にも対応する予定とする。
 - 実行時は`miku-text-bundle`と`miku-md2docx`のCLIランタイムを利用するワークフロー型Agent Skillとする。
 - `miku-prompt-lint-skills` を同レイヤーの姉妹ソフトとして参照する。
 - `miku-text-bundle`と`miku-md2docx`は、Knowledge sources生成時に利用する上流ランタイムとする。
@@ -56,7 +57,7 @@
 
 ## リポジトリ整備 TODO
 
-- [x] 正本のスキルを `skills/igapyon-miku-m365-agent-builder/` 配下へ整理する。
+- [x] 正本のスキルを `skills/igapyon-miku-ai-assistant-builder/` 配下へ整理する。
 - [x] 姉妹ソフト `miku-prompt-lint-skills` を参照し、content-only 型の正本配置、決定的 ZIP、SHA-256、CI、draft release、配布テストを採用する。
 - [x] `README.md` を作成し、目的、正本の配置、ビルド、GitHub Actions を記載する。
 - [ ] `docs/miku-soft-reference.md` を作成するか検討する。

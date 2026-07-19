@@ -6,8 +6,8 @@ import { execFileSync } from "node:child_process";
 import test from "node:test";
 
 const ROOT = process.cwd();
-const repoName = "miku-m365-agent-builder-skills";
-const skillName = "igapyon-miku-m365-agent-builder";
+const repoName = "miku-ai-assistant-builder-skills";
+const skillName = "igapyon-miku-ai-assistant-builder";
 const packageJson = JSON.parse(fs.readFileSync(path.resolve(ROOT, "package.json"), "utf8"));
 const zipPath = path.resolve(ROOT, `bundle/igapyon-${repoName}-${packageJson.version}.zip`);
 const checksumPath = `${zipPath}.sha256`;

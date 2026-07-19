@@ -7,7 +7,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const repoName = "miku-m365-agent-builder-skills";
+const repoName = "miku-ai-assistant-builder-skills";
 const packageJson = JSON.parse(fs.readFileSync(path.resolve(repoRoot, "package.json"), "utf8"));
 const bundleRoot = path.resolve(repoRoot, "bundle", repoName);
 const zipName = `igapyon-${repoName}-${packageJson.version}.zip`;

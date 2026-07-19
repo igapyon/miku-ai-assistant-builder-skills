@@ -1,9 +1,9 @@
 ---
-name: igapyon-miku-m365-agent-builder
-description: Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備し、雑多な既存フォルダを二段階でAgent Builder配備用フォルダへ変換するスキル。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階で手動資料数から残りのファイル枠を求め、自動バンドル、同梱`miku-md2docx`によるMarkdownのDOCX化、準備済みOffice文書の統合を行う。Copilot Studio の作成権限を持たない利用者向けの Agent Builder が対象。`igapyon-miku-m365-agent-builder`または`miku-m365-agent-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換やその再開が依頼されたときに使用する。Copilot Studio 固有のエージェント作成には使用しない。
+name: igapyon-miku-ai-assistant-builder
+description: Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備し、雑多な既存フォルダを二段階でAgent Builder配備用フォルダへ変換するスキル。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階で手動資料数から残りのファイル枠を求め、自動バンドル、同梱`miku-md2docx`によるMarkdownのDOCX化、準備済みOffice文書の統合を行う。Copilot Studio の作成権限を持たない利用者向けの Agent Builder が対象。`igapyon-miku-ai-assistant-builder`または`miku-ai-assistant-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換やその再開が依頼されたときに使用する。Copilot Studio 固有のエージェント作成には使用しない。
 ---
 
-# Igapyon Miku M365 Agent Builder
+# Igapyon Miku AI Assistant Builder
 
 作業時は、最初に同じディレクトリの `index.json` を読み、必要な参照資料を選ぶ。
 
@@ -74,7 +74,7 @@ Microsoft 365 Copilot の Agent Builder 向け入力データを作成する。
 既存フォルダを変換する場合は、元フォルダとは別の出力先に次の配備用フォルダを作る。
 
 ```text
-m365-agent-builder-output/
+ai-assistant-builder-output/
 ├── manual-input/
 │   ├── additional-guide.md
 │   ├── official-document.docx

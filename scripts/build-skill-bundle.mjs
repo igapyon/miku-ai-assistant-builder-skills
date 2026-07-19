@@ -6,8 +6,8 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const repoName = "miku-m365-agent-builder-skills";
-const skillName = "igapyon-miku-m365-agent-builder";
+const repoName = "miku-ai-assistant-builder-skills";
+const skillName = "igapyon-miku-ai-assistant-builder";
 const bundleRoot = path.resolve(repoRoot, "bundle", repoName);
 const sourceSkillRoot = path.resolve(repoRoot, "skills", skillName);
 const bundleSkillRoot = path.resolve(bundleRoot, "skills", skillName);

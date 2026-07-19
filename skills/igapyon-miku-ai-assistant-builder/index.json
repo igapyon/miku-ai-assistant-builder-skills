@@ -1,11 +1,11 @@
 {
- "title": "Igapyon Miku M365 Agent Builder Skill Index",
+ "title": "Igapyon Miku AI Assistant Builder Skill Index",
  "generator": "miku-indexgen",
- "generation": {"schemaVersion":1,"inputPath":".","markdownOutput":false,"recursive":true,"includeExtensions":["md","json","yaml","mjs","jar"],"inputEncoding":"utf8","outputEncoding":"utf8","title":"Igapyon Miku M365 Agent Builder Skill Index","includeGeneratorMetadata":true},
+ "generation": {"schemaVersion":1,"inputPath":".","markdownOutput":false,"recursive":true,"includeExtensions":["md","json","yaml","mjs","jar"],"inputEncoding":"utf8","outputEncoding":"utf8","title":"Igapyon Miku AI Assistant Builder Skill Index","includeGeneratorMetadata":true},
  "basePath": ".",
  "files": [
-  {"name":"SKILL.md","path":"SKILL.md","ext":"md","dir":"","size":14791,"description":"Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備し、雑多な既存フォルダを二段階でAgent Builder配備用フォルダへ変換するスキル。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階で手動資料数から残りのファイル枠を求め、自動バンドル、同梱`miku-md2docx`によるMarkdownのDOCX化、準備済みOffice文書の統合を行う。Cop...","summary":"Igapyon Miku M365 Agent Builder"},
-  {"name":"openai.yaml","path":"agents/openai.yaml","ext":"yaml","dir":"agents","size":478},
+  {"name":"SKILL.md","path":"SKILL.md","ext":"md","dir":"","size":14801,"description":"Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備し、雑多な既存フォルダを二段階でAgent Builder配備用フォルダへ変換するスキル。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階で手動資料数から残りのファイル枠を求め、自動バンドル、同梱`miku-md2docx`によるMarkdownのDOCX化、準備済みOffice文書の統合を行う。Cop...","summary":"Igapyon Miku AI Assistant Builder"},
+  {"name":"openai.yaml","path":"agents/openai.yaml","ext":"yaml","dir":"agents","size":482},
   {"name":"01-input-fields.md","path":"references/instructions/01-input-fields.md","ext":"md","dir":"references/instructions","size":8067,"summary":"Microsoft 365 Copilot Agent Builderの入力項目と推奨形式"},
   {"name":"01-principles.md","path":"references/knowledge-sources/01-principles.md","ext":"md","dir":"references/knowledge-sources","size":1808,"summary":"Knowledge sourcesの基本原則"},
   {"name":"02-content-design.md","path":"references/knowledge-sources/02-content-design.md","ext":"md","dir":"references/knowledge-sources","size":2207,"summary":"Knowledge sourceのコンテンツ設計"},

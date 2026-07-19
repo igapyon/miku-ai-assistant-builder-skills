@@ -6,8 +6,8 @@ import { execFileSync } from "node:child_process";
 import test from "node:test";
 
 const ROOT = process.cwd();
-const repoName = "miku-m365-agent-builder-skills";
-const skillName = "igapyon-miku-m365-agent-builder";
+const repoName = "miku-ai-assistant-builder-skills";
+const skillName = "igapyon-miku-ai-assistant-builder";
 
 test("bundle installs directly under the agent home skills directory", () => {
   const sourceBundle = path.resolve(ROOT, "bundle", repoName);

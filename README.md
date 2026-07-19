@@ -1,6 +1,6 @@
-# miku-m365-agent-builder-skills
+# miku-ai-assistant-builder-skills
 
-`miku-m365-agent-builder-skills` は、Microsoft 365 Copilot の Agent Builder に投入するデータを準備する `igapyon-miku-m365-agent-builder` Agent Skill を提供します。
+`miku-ai-assistant-builder-skills` は、Microsoft 365 Copilot の Agent Builder に投入するデータを準備する `igapyon-miku-ai-assistant-builder` Agent Skill を提供します。
 
 Copilot Studio 固有のエージェント構築ではなく、Microsoft 365 Copilot 内の軽量な Agent Builder を対象とします。
 
@@ -10,7 +10,7 @@ Copilot Studio 固有のエージェント構築ではなく、Microsoft 365 Cop
 
 スキルの正本は次のディレクトリです。
 
-- `skills/igapyon-miku-m365-agent-builder/`
+- `skills/igapyon-miku-ai-assistant-builder/`
 
 このスキルは、Knowledge source生成用の`miku-text-bundle`とDOCX生成用の
 `miku-md2docx`について、Node.js版とJava版のCLIランタイムを同梱する
@@ -33,11 +33,11 @@ npm run verify:reproducible
 
 ビルドにより次の成果物を生成します。
 
-- `bundle/miku-m365-agent-builder-skills/`
-- `bundle/igapyon-miku-m365-agent-builder-skills-<version>.zip`
-- `bundle/igapyon-miku-m365-agent-builder-skills-<version>.zip.sha256`
+- `bundle/miku-ai-assistant-builder-skills/`
+- `bundle/igapyon-miku-ai-assistant-builder-skills-<version>.zip`
+- `bundle/igapyon-miku-ai-assistant-builder-skills-<version>.zip.sha256`
 
-ZIP は Agent home 直下へ展開する形式で、内部のスキルは `skills/igapyon-miku-m365-agent-builder/` に配置されます。
+ZIP は Agent home 直下へ展開する形式で、内部のスキルは `skills/igapyon-miku-ai-assistant-builder/` に配置されます。
 
 ## 二段階のフォルダ変換
 
@@ -81,4 +81,4 @@ InstructionsをKnowledge sourceへ移しても、作成者による信頼され�
 
 - `workplace/` は参照用 checkout や検証成果物のローカル作業領域です。`workplace/.gitkeep` だけを追跡します。
 - `bundle/`、`release-assets/`、`node_modules/`、ログ、ローカルの `.codex/skills/` は Git 管理外です。
-- `skills/igapyon-miku-m365-agent-builder/index.json` は miku-indexgen の生成物です。スキル内容を変更したら再生成し、手編集しません。
+- `skills/igapyon-miku-ai-assistant-builder/index.json` は miku-indexgen の生成物です。スキル内容を変更したら再生成し、手編集しません。
