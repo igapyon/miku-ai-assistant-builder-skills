@@ -2,11 +2,17 @@
 
 ## 目的
 
-文書、メモ、ソースコード、下書き、旧版などが混在するフォルダから、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定したあと、人間が準備したMarkdownやOffice文書を追加し、その件数に応じた残り枠で自動バンドルを生成してMicrosoft 365 Copilot Agent Builderへ設定しやすい単一の配備用フォルダへ統合する。
+文書、メモ、ソースコード、下書き、旧版などが混在するフォルダから、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定したあと、人間が準備したMarkdownやOffice文書を追加し、主対象のMicrosoft 365 Copilot Agent Builderへ設定しやすい単一の配備用フォルダへ統合する。Google Gemini Gem向けは早期アクセスとして同じ流れを可能な範囲で再利用する。
 
 これは専用インポート形式への変換ではない。Configure画面へコピーする入力値と、Knowledge sourcesとして登録する候補を人が確認できる受け渡し形式とする。
 
-生成物は、社内や組織テナント内などの閉じたAgent Builder環境へ人が配備する。このワークフローはローカルの配備用フォルダを完成させるところで終了し、Agent Builderへのアップロード、共有設定、外部公開は行わない。
+生成物は利用者が管理するAgent BuilderまたはGemへ人が配備する。このワークフローはローカルの配備用フォルダを完成させるところで終了し、ファイルのアップロード、共有設定、外部公開は行わない。
+
+## 配備先と形式の選択
+
+新規変換では、主対象の`agent-builder`または早期アクセスの`gem`を利用者に確認する。Agent Builderは端末からの埋め込みファイルを利用できる環境、GemはKnowledgeへのファイル追加を利用できる環境だけを対象にする。
+
+Gemでは、Knowledge用Markdownを`markdown`のまま使うか`docx`へ変換するかも確認する。Markdownの添付可否、DOCXとの回答品質差、ファイル上限は環境や製品更新に依存するため、推測で選ばない。選択を`work/preparation-status.md`へ記録し、再開時に変更しない。
 
 ## 状態遷移
 
@@ -38,14 +44,14 @@ new
 
 ## 第1段階: 自動テキスト入力の確定と準備待ち
 
-1. エージェントの目的、対象利用者、代表的な質問、正式資料、入力元、出力先を特定する。
+1. エージェントの目的、対象利用者、代表的な質問、正式資料、入力元、出力先、配備先を特定する。GemではMarkdownまたはDOCXも選ぶ。
 2. ファイルの相対パス、形式、サイズ、更新日時、文字コード、読取可否を棚卸しする。
 3. `.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルを既定で`Auto include`へ分類する。内容の関連性、推定テーマ、旧版、重複候補だけを理由に対象を絞り込まない。
 4. `.env`と`.env.*`、秘密情報、出力先、利用者が明示した除外、ランタイムが技術的に扱えないファイルだけを`Exclude`または`Confirm`へ分類し、理由を記録する。
 5. DOCX、PPTX、XLSX、PDF、画像などの非テキスト資料を自動変換せず、自動処理対象に含めない。必要なら、人が準備して`manual-input/`へ置く`Manual candidate`として記録する。この段階では分割数を確定せず、`miku-text-bundle`を実行しない。
 6. 空の`manual-input/`を作る。既存の`manual-input/`がある場合は内容を削除せず、新規変換として続行しない。
 7. `work/preparation-status.md`を作り、状態を`awaiting-manual-input`にする。
-8. 利用者へ`manual-input/`の場所、追加可能な形式、人力資料は最大19件であること、原本を変更しない規則、再開方法を伝える。
+8. 利用者へ`manual-input/`の場所、追加可能な形式、対象サービスで確認したファイル上限、原本を変更しない規則、再開方法を伝える。Agent Builderでは人力資料は最大19件とする。
 9. 追加資料がない場合も利用者の明示的な確認を待ち、ここで停止する。
 
 第1段階では次を行わない。
@@ -55,7 +61,7 @@ new
 - 番号付きMarkdownのDOCX変換
 - `manual-input/`の資料変換またはコピー
 - 最終`upload/`の構成
-- `agent-builder-input.md`の生成
+- `agent-builder-input.md`または`gem-input.md`の生成
 - 状態の`finalized`への更新
 
 ## preparation-status.md
@@ -63,9 +69,11 @@ new
 別セッションで推測せず再開できるよう、少なくとも次をMarkdownで記録する。
 
 ```markdown
-# Agent Builder Preparation Status
+# AI Assistant Builder Preparation Status
 
 - State: awaiting-manual-input
+- Target platform: [agent-builder または gem]
+- Gem knowledge format: [markdown、docx、またはN/A]
 - Source directory: [入力元]
 - Output directory: [出力先]
 - Created at: [日時とタイムゾーン]
@@ -92,16 +100,16 @@ new
 Place optional source files in manual-input/, then invoke this skill again with this output directory.
 ```
 
-状態ファイルには秘密情報を記録しない。入力元と出力先の絶対パスは再開に必要なローカル管理情報として状態ファイルにだけ記録できるが、Knowledge sources、DOCX本文、`agent-builder-input.md`へ複製しない。
+状態ファイルには秘密情報を記録しない。入力元と出力先の絶対パスは再開に必要なローカル管理情報として状態ファイルにだけ記録できるが、Knowledgeファイル本文、`agent-builder-input.md`、`gem-input.md`へ複製しない。
 
 ## 人間による追加資料
 
 利用者は、Knowledge sourcesへ加えたい原本を`manual-input/`へ置く。
 
-- Markdownは第2段階で同じbasenameのDOCXへ変換する。
-- DOCX、PPTX、XLSXなど、現行Agent Builderが埋め込みファイルとして受け付ける準備済みOffice文書は、検証後にbasenameを維持して最終候補へ含める。
-- 手動Markdownは変換後のDOCX 1件として数え、準備済みOffice文書と合わせて最大19件とする。
-- 19件は自動生成Knowledge sourceを最低1件確保するための上限である。
+- Agent BuilderではMarkdownを第2段階で同じbasenameのDOCXへ変換する。
+- Gemでは選択に従い、Markdownのまま使うか同じbasenameのDOCXへ変換する。
+- 対象サービスが受け付けることを確認した準備済み文書は、検証後にbasenameを維持して最終候補へ含める。
+- Agent Builderでは手動資料を最大19件とする。GemではAgent Builderの19件を流用しない。
 - 対応可否が不明な形式は自動採用しない。
 - サブディレクトリを許可する場合も、最終`upload/`はフラットにするため、全候補のbasename競合を確認する。
 - `manual-input/`のファイルをその場で変換、編集、改名しない。
@@ -112,24 +120,24 @@ Place optional source files in manual-input/, then invoke this skill again with 
 2. 記録された入力元、出力先、自動処理対象、実行条件と、現在のファイルを照合する。欠落や差異は推測で補わず停止する。
 3. 利用者が追加資料の準備完了、または追加資料なしを明示していることを確認する。
 4. `manual-input/`を読み取り専用で棚卸しし、形式、サイズ、読取可否、機密性、パスワード保護を確認する。
-5. 手動Markdownを変換後のDOCX 1件として数え、検証済みの準備済みOffice文書と合わせた手動資料数`M`を確定する。`M`が20以上なら、19件以下への削減を求めて停止する。
-6. 自動生成枠`A = 20 - M`を求める。選択済みの適格な自動入力ファイル数`N`が0なら停止し、目標自動出力数を`T = min(N, A)`とする。
+5. 手動Markdownを選択形式にかかわらず1件として数え、検証済みの準備済み文書と合わせた手動資料数`M`を確定する。Agent Builderで`M`が20以上なら、19件以下への削減を求めて停止する。Gemでは実画面で確認した上限を使う。
+6. 対象サービスで確認した総ファイル上限から自動生成枠`A`を求める。Agent Builderでは`A = 20 - M`とする。Gemでは20件を流用しない。選択済みの適格な自動入力ファイル数`N`が0なら停止し、目標自動出力数を`T = min(N, A)`とする。
 7. 選択済み自動入力の合計文字数`C`を求め、`maxChars = max(120000, ceil(C / T))`を初期値とする。120,000文字は運用上の下限であり、Microsoftの制限値ではない。
 8. 同梱`miku-text-bundle`をknowledge-sourceモードでdry-runする。収集件数が`N`と一致し、推定Knowledgeファイル数が`A`以下になるまで、対象条件の修正または`maxChars`の増加とdry-runを繰り返す。推定数が`A`未満でも、空き枠を埋めるための分割は行わない。
 9. 条件を満たした値で本実行し、番号付きMarkdownを`work/knowledge-markdown/`へ、管理用indexを`work/knowledge-index.md`へ配置する。本実行の番号付きMarkdownが`A`を超えた場合は最終化せず、より大きい`maxChars`で再生成する。
 10. 次の最終basenameをすべて列挙し、重複がないことを変換やコピーの前に確認する。
-    - `work/knowledge-markdown/*.md`をDOCX化したbasename
-    - `manual-input/`のMarkdownをDOCX化したbasename
+    - `work/knowledge-markdown/*.md`を選択形式でコピーまたはDOCX化したbasename
+    - `manual-input/`のMarkdownを選択形式でコピーまたはDOCX化したbasename
     - 検証済みの準備済みOffice文書のbasename
 11. 競合、未対応形式、確認待ちがあれば`items-to-confirm.md`へ記録し、`upload/`を変更せず停止する。
 12. 状態を`finalizing`へ更新し、`M`、`A`、`N`、`T`、`C`、採用した`maxChars`、dry-run推定数、本実行生成数を記録する。
-13. 番号付きMarkdownと手動Markdownを`miku-md2docx`で一対一変換する。変換先は既存の正常な`upload/`とは別の一時的な出力場所とする。
+13. Agent BuilderまたはGemのDOCX選択では、番号付きMarkdownと手動Markdownを`miku-md2docx`で一対一変換する。GemのMarkdown選択では`miku-md2docx`を実行せず、Markdownをそのままコピーする。出力先は既存の正常な`upload/`とは別の一時的な場所とする。
 14. 準備済みOffice文書を一時的な出力場所へコピーし、原本とのサイズまたはハッシュ一致を確認する。
-15. DOCXの開封可否、元相対パス、ファイル境界、リンク、秘密情報と、Office文書の読取可否を検証する。
-16. 自動生成物と手動資料を合わせた最終候補総数が20以下であることを確認する。
+15. MarkdownまたはDOCXの開封可否、元相対パス、ファイル境界、リンク、秘密情報と、準備済み文書の読取可否を検証する。
+16. 自動生成物と手動資料を合わせた最終候補総数が、対象サービスで確認した上限以下であることを確認する。
 17. すべての検証に成功した場合だけ、最終`upload/`を登録候補のフラット構成へ置き換える。
-18. `upload/`の実在ファイルからKnowledge sources一覧を作り、`agent-builder-input.md`へbasenameだけを記載する。
-19. `upload/`の未参照ファイルと`agent-builder-input.md`の参照切れがないことを双方向に確認する。
+18. `upload/`の実在ファイルからKnowledge一覧を作り、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`へbasenameだけを記載する。
+19. `upload/`の未参照ファイルと入力用Markdownの参照切れがないことを双方向に確認する。
 20. `items-to-confirm.md`を確定し、状態を`finalized`へ更新する。
 21. 利用者へ`upload/`の登録候補、手動資料数、自動生成数、合計数と確認事項を示す。
 
@@ -155,17 +163,17 @@ Place optional source files in manual-input/, then invoke this skill again with 
 - 第1段階では自動処理対象だけが確定し、`miku-text-bundle`がまだ実行されていない。
 - `preparation-status.md`から別セッションで再開できる。
 - `manual-input/`の原本が変更されていない。
-- `agent-builder-input.md`がConfigure画面の項目順になっている。
+- `agent-builder-input.md`または`gem-input.md`が対象サービスの入力項目順になっている。
 - Knowledge sources欄が`upload/`に実在するbasenameだけを使う。
 - `upload/`が登録候補だけのフラット構成になっている。
-- 自動生成Markdownと手動Markdownが対応するDOCXへ変換されている。
+- 自動生成Markdownと手動Markdownが選択どおりMarkdownのまま配置されるか、対応するDOCXへ変換されている。
 - 検証済みの準備済みOffice文書がbasenameを維持している。
-- 手動資料が19件以下で、自動生成Knowledge sourceが最低1件ある。
-- 自動生成数が`A = 20 - M`以下で、最終登録候補総数が20以下である。
+- Agent Builderでは手動資料が19件以下で、自動生成Knowledge sourceが最低1件ある。
+- Agent Builderでは自動生成数が`A = 20 - M`以下で、最終登録候補総数が20以下である。Gemでは実画面で確認した上限以下である。
 - `N`が自動生成枠より少ない場合、空き枠を埋めるための不要な分割をしていない。
 - 中間Markdown、管理用index、状態ファイルが`work/`へ分離されている。
 - InstructionsとKnowledge sourcesが混在していない。
 - スキップ、旧版、重複、矛盾、読取不能、未対応形式、機密情報が無整理で残っていない。
 - 入力元と`manual-input/`が変更されていない。
-- 対象テナント、Agent Builderの共有範囲、Knowledge sourcesの閲覧権限が`items-to-confirm.md`に明示されている。
+- 対象テナントまたはアカウント、共有範囲、Knowledgeファイルの閲覧権限が`items-to-confirm.md`に明示されている。
 - 外部サービス、公開Web、公開リポジトリへ生成物をアップロードしていない。
