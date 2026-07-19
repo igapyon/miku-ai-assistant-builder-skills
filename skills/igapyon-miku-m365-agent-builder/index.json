@@ -12,7 +12,7 @@
   {"name":"03-miku-text-bundle.md","path":"references/knowledge-sources/03-miku-text-bundle.md","ext":"md","dir":"references/knowledge-sources","size":5341,"summary":"miku-text-bundle連携"},
   {"name":"04-upstream-request.md","path":"references/knowledge-sources/04-upstream-request.md","ext":"md","dir":"references/knowledge-sources","size":6094,"summary":"miku-text-bundleへのKnowledge sourceモード追加依頼（実装済み）"},
   {"name":"05-miku-md2docx.md","path":"references/knowledge-sources/05-miku-md2docx.md","ext":"md","dir":"references/knowledge-sources","size":4621,"summary":"miku-md2docx連携"},
-  {"name":"06-upload-file-budget.md","path":"references/knowledge-sources/06-upload-file-budget.md","ext":"md","dir":"references/knowledge-sources","size":4362,"summary":"Agent Builderのファイル枠配分"},
+  {"name":"06-upload-file-budget.md","path":"references/knowledge-sources/06-upload-file-budget.md","ext":"md","dir":"references/knowledge-sources","size":4361,"summary":"Agent Builderのファイル枠配分"},
   {"name":"01-baseline.md","path":"references/platform/01-baseline.md","ext":"md","dir":"references/platform","size":3486,"summary":"Microsoft 365 Copilot Agent Builderの基礎情報"},
   {"name":"02-limitations.md","path":"references/platform/02-limitations.md","ext":"md","dir":"references/platform","size":7932,"summary":"Microsoft 365 Copilot Agent Builderの制限・設計上の注意"},
   {"name":"runtime-artifacts.md","path":"references/runtime-artifacts.md","ext":"md","dir":"references","size":2070,"summary":"同梱ランタイム"},
