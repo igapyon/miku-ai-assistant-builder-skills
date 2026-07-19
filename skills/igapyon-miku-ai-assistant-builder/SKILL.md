@@ -17,6 +17,8 @@ description: ベータ版。Microsoft 365 Copilot内の軽量なAgent Builderに
 
 生成物は、利用者が管理するAgent BuilderまたはGemへの人手による配備を前提にする。このスキル自身はファイルのアップロード、エージェントやGemの共有、外部Web、公開リポジトリ、その他の外部サービスへの公開を行わない。
 
+`miku-text-bundle`対応テキストを原則すべて自動処理対象にすることは、配備用Knowledgeファイルを準備する際の入力範囲を示す。登録成功やKnowledge一覧への表示は、配備後のAIアシスタントが全情報を常に検索・取得・参照できることや、回答へ必ず利用することを保証しない。利用者へこの違いを説明し、配備後は代表的な質問で確認するよう案内する。
+
 ## Purpose
 
 Microsoft 365 CopilotのAgent Builder向け入力データを作成する。Google GeminiのGem向け入力データは早期アクセスとして扱う。
@@ -133,6 +135,7 @@ ai-assistant-builder-output/
 - DOCX間の相対リンクや読み込み順に依存しない。
 - `agent-builder-input.md`または`gem-input.md`のKnowledge一覧に`upload/`、ローカル絶対パス、その他の配備元ディレクトリを記載しない。
 - Instructionsには、登録済みKnowledge sourcesを回答根拠として優先し、根拠が見つからない事項を推測で補わない方針を含める。
+- 配備用Knowledgeファイルの準備・登録と、配備後の検索・取得・回答を区別する。登録済みKnowledge内の全情報が常に参照されるとは保証しない。
 - マシン固有の絶対パスをKnowledge sourcesへ含めない。元ファイルはリポジトリルート基準の相対パスで識別する。
 - フォルダ内の全ファイルを無条件に含めない。
 - 読み取れない内容、欠落した文脈、URL、版、更新日を推測で補わない。

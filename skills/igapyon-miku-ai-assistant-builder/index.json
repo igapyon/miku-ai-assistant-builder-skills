@@ -4,10 +4,10 @@
  "generation": {"schemaVersion":1,"inputPath":".","markdownOutput":false,"recursive":true,"includeExtensions":["md","json","yaml","mjs","jar"],"inputEncoding":"utf8","outputEncoding":"utf8","title":"Igapyon Miku AI Assistant Builder Skill Index","includeGeneratorMetadata":true},
  "basePath": ".",
  "files": [
-  {"name":"SKILL.md","path":"SKILL.md","ext":"md","dir":"","size":17379,"description":"ベータ版。Microsoft 365 Copilot内の軽量なAgent Builderに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Google GeminiのGemには早期アクセスとして軽量対応する。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階ではAgent Builder向けMarkdownをDOCX化し、Gem早期ア...","summary":"Igapyon Miku AI Assistant Builder"},
+  {"name":"SKILL.md","path":"SKILL.md","ext":"md","dir":"","size":18049,"description":"ベータ版。Microsoft 365 Copilot内の軽量なAgent Builderに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Google GeminiのGemには早期アクセスとして軽量対応する。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階ではAgent Builder向けMarkdownをDOCX化し、Gem早期ア...","summary":"Igapyon Miku AI Assistant Builder"},
   {"name":"openai.yaml","path":"agents/openai.yaml","ext":"yaml","dir":"agents","size":459},
   {"name":"01-input-fields.md","path":"references/instructions/01-input-fields.md","ext":"md","dir":"references/instructions","size":8067,"summary":"Microsoft 365 Copilot Agent Builderの入力項目と推奨形式"},
-  {"name":"01-principles.md","path":"references/knowledge-sources/01-principles.md","ext":"md","dir":"references/knowledge-sources","size":1808,"summary":"Knowledge sourcesの基本原則"},
+  {"name":"01-principles.md","path":"references/knowledge-sources/01-principles.md","ext":"md","dir":"references/knowledge-sources","size":2720,"summary":"Knowledge sourcesの基本原則"},
   {"name":"02-content-design.md","path":"references/knowledge-sources/02-content-design.md","ext":"md","dir":"references/knowledge-sources","size":2207,"summary":"Knowledge sourceのコンテンツ設計"},
   {"name":"03-miku-text-bundle.md","path":"references/knowledge-sources/03-miku-text-bundle.md","ext":"md","dir":"references/knowledge-sources","size":5497,"summary":"miku-text-bundle連携"},
   {"name":"04-upstream-request.md","path":"references/knowledge-sources/04-upstream-request.md","ext":"md","dir":"references/knowledge-sources","size":6094,"summary":"miku-text-bundleへのKnowledge sourceモード追加依頼（実装済み）"},
