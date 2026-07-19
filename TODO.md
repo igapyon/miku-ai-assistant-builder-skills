@@ -5,7 +5,7 @@
 このリポジトリは、Microsoft 365 Copilot 内の軽量な Agent Builder に投入するデータを準備する Agent Skill の作業中リポジトリである。
 
 - Copilot Studio 固有のエージェント構築は対象外とする。
-- 将来は、Microsoft 365 Copilot の Agent Builder に加えて、Google Gemini の Gem にも対応する予定とする。
+- Microsoft 365 Copilot の Agent Builder を主対象とし、Google Gemini の Gem には早期アクセスとして軽量対応する。
 - 実行時は`miku-text-bundle`と`miku-md2docx`のCLIランタイムを利用するワークフロー型Agent Skillとする。
 - `miku-prompt-lint-skills` を同レイヤーの姉妹ソフトとして参照する。
 - `miku-text-bundle`と`miku-md2docx`は、Knowledge sources生成時に利用する上流ランタイムとする。
@@ -14,8 +14,8 @@
 
 - 利用者の要望から、Agent Builder の各入力欄へコピーできるデータを作成する。
 - 雑多な既存フォルダを棚卸しし、`miku-text-bundle --mode knowledge-source`でKnowledge sources候補を生成する。
-- 番号付き中間Markdownを`miku-md2docx`でDOCX化し、フラットな`upload/`を最終登録対象にする。
-- 元リポジトリ基準の相対パスをDOCX本文に保持し、DOCX間の相対リンクには依存しない。
+- Agent Builderでは番号付き中間MarkdownをDOCX化し、GemではMarkdownのまま利用するかDOCX化するかを選び、フラットな`upload/`を最終登録対象にする。
+- 元リポジトリ基準の相対パスをMarkdownまたはDOCX本文に保持し、Knowledgeファイル間の相対リンクには依存しない。
 - 基本の出力順は次のとおりとする。
   1. Name
   2. Description

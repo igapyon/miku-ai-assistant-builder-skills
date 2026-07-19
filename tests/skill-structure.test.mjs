@@ -23,6 +23,7 @@ test("generated index is required and current", () => {
     "references/runtime-artifacts.md",
     "references/platform/01-baseline.md",
     "references/platform/02-limitations.md",
+    "references/platform/03-gemini-gems.md",
     "references/workflows/01-folder-conversion.md",
     "runtime/miku-md2docx-1.0.1.mjs",
     "runtime/miku-md2docx-java-1.0.1.jar",
@@ -86,7 +87,7 @@ test("deployment workflow produces flat validated uploads with traceable source 
   );
   assert.match(skillMd, /miku-md2docx/);
   assert.match(skillMd, /バックエンド指定がなければNode\.js版を使用する/);
-  assert.match(skillMd, /自動生成DOCX、手動Markdownから変換したDOCX、検証済みの準備済みOffice文書/);
+  assert.match(skillMd, /選択形式の自動生成資料、手動Markdown、検証済みの準備済み資料/);
   assert.match(skillMd, /リポジトリルート基準の相対パス/);
   assert.match(docxReference, /DOCX間の相対リンクが解決されることを前提にしない/);
   assert.match(docxReference, /upload\/.*登録候補だけのフラット構成/);
@@ -130,7 +131,7 @@ test("manual files determine the remaining automatic upload budget", () => {
   assert.match(skillMd, /T = min\(N, A\)/);
   assert.match(skillMd, /max\(120000, ceil\(C \/ T\)\)/);
   assert.match(workflow, /空き枠を埋めるための分割は行わない/);
-  assert.match(workflow, /最終候補総数が20以下/);
+  assert.match(workflow, /Agent Builderでは.*最終登録候補総数が20以下/);
   assert.match(budget, /M`が20以上.*19件以下への削減/);
   assert.match(budget, /`N`が0.*停止/);
   assert.match(budget, /推定Knowledgeファイル数が`A`を超える場合/);
@@ -186,8 +187,8 @@ test("deployment stays a human-controlled internal handoff", () => {
     "utf8"
   );
 
-  assert.match(skillMd, /社内または組織テナント内の閉じたAgent Builder/);
-  assert.match(skillMd, /Agent Builderへのアップロード、共有設定、外部Webや公開リポジトリへの公開を行わない/);
+  assert.match(skillMd, /利用者が管理するAgent BuilderまたはGemへ人が配備/);
+  assert.match(skillMd, /ファイルのアップロード、共有設定、外部Webや公開リポジトリへの公開を行わない/);
   assert.match(workflow, /ローカルの配備用フォルダを完成させるところで終了/);
   assert.match(workflow, /対象テナント.*共有範囲.*閲覧権限/);
 });
@@ -224,6 +225,40 @@ test("finalization converts Markdown and carries validated Office documents", ()
   assert.match(workflow, /状態を`finalized`へ更新/);
   assert.match(limitations, /\.docx.*\.pptx.*\.xlsx/);
   assert.match(limitations, /手動追加Markdownを直接登録せずDOCXへ変換/);
+});
+
+test("Gem deployment supports explicit Markdown or DOCX selection", () => {
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const gemReference = fs.readFileSync(
+    path.resolve(skillRoot, "references/platform/03-gemini-gems.md"),
+    "utf8"
+  );
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+
+  assert.match(skillMd, /Google GeminiのGem/);
+  assert.match(skillMd, /Agent Builderを主対象.*Gemには早期アクセス/);
+  assert.match(skillMd, /Gemの場合.*`markdown`.*`docx`.*推測で選ばない/);
+  assert.match(skillMd, /Gemの`markdown`選択では`miku-md2docx`を実行せず/);
+  assert.match(gemReference, /GemのKnowledgeへファイルを追加できる/);
+  assert.match(gemReference, /Agent Builderと同等の機能、検証範囲、動作保証は提供しない/);
+  assert.match(gemReference, /`gem-input\.md`.*Knowledgeへ添付しない/);
+  assert.match(workflow, /Gemでは20件を流用しない/);
+});
+
+test("file-backed deployment requires an eligible platform environment", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const limitations = fs.readFileSync(
+    path.resolve(skillRoot, "references/platform/02-limitations.md"),
+    "utf8"
+  );
+
+  assert.match(readme, /Agent Builderでは.*ファイル添付を利用できるライセンスまたは従量課金環境/);
+  assert.match(skillMd, /Gem早期アクセスは.*Knowledgeへのファイル追加を利用できるアカウント、プラン、管理者設定/);
+  assert.match(limitations, /端末からの埋め込みファイルを利用できるライセンスまたは従量課金環境だけを対象/);
 });
 
 test("generated Agent Builder input uses knowledge-first instructions and flat registered names", () => {

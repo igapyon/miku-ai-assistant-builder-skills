@@ -1,6 +1,6 @@
 # Microsoft 365 Copilot Agent Builderの制限・設計上の注意
 
-この資料は、Copilot Studioではなく、Microsoft 365 Copilot内のAgent Builderを対象にする。制限を「画面上の制限」「利用環境への依存」「方式上の限界」「生成AIとしての限界」に分けて判断する。
+この資料は、Copilot Studioではなく、Microsoft 365 Copilot内のAgent Builderを対象にする。制限を「画面上の制限」「利用環境への依存」「方式上の限界」「生成AIとしての限界」に分けて判断する。本スキルのAgent Builder向けフォルダ変換は、端末からの埋め込みファイルを利用できるライセンスまたは従量課金環境だけを対象とする。
 
 ## 基本的な判断
 
