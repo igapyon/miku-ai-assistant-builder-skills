@@ -17,14 +17,16 @@
 
 ## 標準実行
 
-最初にdry-runで収集件数、スキップ件数、無視件数、推定Part数を確認する。
+二段階フォルダ変換では、第1段階で実行しない。人間の追加資料が確定した第2段階で、[Agent Builderのファイル枠配分](06-upload-file-budget.md)に従って手動資料数から自動生成枠と`maxChars`を求める。
+
+最初にdry-runで収集件数、スキップ件数、無視件数、推定Part数を確認する。`<calculatedMaxChars>`には、`max(120000, ceil(C / T))`で求め、必要に応じてdry-runで増加調整した値を指定する。
 
 ```text
 node <skill-root>/runtime/miku-text-bundle-1.6.0.mjs \
   --input <inputDir> \
   --output <outputDir> \
   --mode knowledge-source \
-  --max-chars 66666666 \
+  --max-chars <calculatedMaxChars> \
   --max-input-file-bytes 200000000 \
   --dry-run
 ```
@@ -36,7 +38,7 @@ java -jar <skill-root>/runtime/miku-text-bundle-java-1.6.0.jar \
   --input <inputDir> \
   --output <outputDir> \
   --mode knowledge-source \
-  --max-chars 66666666 \
+  --max-chars <calculatedMaxChars> \
   --max-input-file-bytes 200000000 \
   --dry-run
 ```
@@ -52,7 +54,9 @@ java -jar <skill-root>/runtime/miku-text-bundle-java-1.6.0.jar \
 - `--add-exclude-directory "dir"`
 - `--verbose`
 
-標準の分割単位は200 MB（200,000,000 bytes）とし、UTF-8の1文字を3 bytesとして換算した66,666,666文字（端数切り捨て）を`--max-chars`へ指定する。`--max-input-file-bytes 200000000`は単一入力ファイルの上限も同じ200 MBに揃える指定である。生成Markdownには見出しや出典情報も付加されるため、実行後は実サイズが上限内であることを確認する。Agent Builder側の制限が変更された場合は、最新仕様に合わせて両方の値を見直す。
+`--max-input-file-bytes 200000000`は単一入力ファイルの運用上限を200 MBにする指定である。`--max-chars`はファイルサイズ上限から固定換算せず、20件の登録枠、人力資料数、自動入力数、合計文字数から実行ごとに求める。120,000文字は同梱ランタイムの既定値に基づく運用上の下限であり、Microsoftの制限値ではない。
+
+生成Markdownには見出しや出典情報も付加されるため、dry-run推定数と本実行の番号付きMarkdown数を確認する。本実行結果が自動生成枠を超えた場合は最終化せず、`--max-chars`を増やして再生成する。Agent Builder側の制限が変更された場合は、ファイル枠配分を最新仕様に合わせて見直す。
 
 ## 成果物の役割
 
