@@ -2,7 +2,7 @@
 
 ## 目的
 
-文書、メモ、ソースコード、下書き、旧版などが混在するフォルダから自動処理対象を選定したあと、人間が準備したMarkdownやOffice文書を追加し、その件数に応じた残り枠で自動バンドルを生成してMicrosoft 365 Copilot Agent Builderへ設定しやすい単一の配備用フォルダへ統合する。
+文書、メモ、ソースコード、下書き、旧版などが混在するフォルダから、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定したあと、人間が準備したMarkdownやOffice文書を追加し、その件数に応じた残り枠で自動バンドルを生成してMicrosoft 365 Copilot Agent Builderへ設定しやすい単一の配備用フォルダへ統合する。
 
 これは専用インポート形式への変換ではない。Configure画面へコピーする入力値と、Knowledge sourcesとして登録する候補を人が確認できる受け渡し形式とする。
 
@@ -36,13 +36,13 @@ new
 - 出力basenameの競合は、変換やコピーより前に検出する。自動改名や上書きで解決しない。
 - `upload/`を変更する前に最終出力計画を確定する。途中失敗時に既存の正常な`upload/`を部分更新しない。
 
-## 第1段階: 自動処理対象の選定と準備待ち
+## 第1段階: 自動テキスト入力の確定と準備待ち
 
 1. エージェントの目的、対象利用者、代表的な質問、正式資料、入力元、出力先を特定する。
-2. ファイルの相対パス、形式、サイズ、更新日時、推定テーマ、版、重複候補、読取可否を棚卸しする。
-3. `Include`、`Exclude`、`Convert first`、`Confirm`へ分類する。`.env`と`.env.*`は必ず`Exclude`へ分類する。
-4. Office文書、PDF、画像など、自動処理対象だが`miku-text-bundle`が既定で除外する必要資料は、検証可能な方法でテキスト化する計画または専用の中間入力へ整理する。
-5. 自動処理対象の相対パス、分類、変換の有無、文字コード、除外条件を記録する。この段階では分割数を確定せず、`miku-text-bundle`を実行しない。
+2. ファイルの相対パス、形式、サイズ、更新日時、文字コード、読取可否を棚卸しする。
+3. `.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルを既定で`Auto include`へ分類する。内容の関連性、推定テーマ、旧版、重複候補だけを理由に対象を絞り込まない。
+4. `.env`と`.env.*`、秘密情報、出力先、利用者が明示した除外、ランタイムが技術的に扱えないファイルだけを`Exclude`または`Confirm`へ分類し、理由を記録する。
+5. DOCX、PPTX、XLSX、PDF、画像などの非テキスト資料を自動変換せず、自動処理対象に含めない。必要なら、人が準備して`manual-input/`へ置く`Manual candidate`として記録する。この段階では分割数を確定せず、`miku-text-bundle`を実行しない。
 6. 空の`manual-input/`を作る。既存の`manual-input/`がある場合は内容を削除せず、新規変換として続行しない。
 7. `work/preparation-status.md`を作り、状態を`awaiting-manual-input`にする。
 8. 利用者へ`manual-input/`の場所、追加可能な形式、人力資料は最大19件であること、原本を変更しない規則、再開方法を伝える。
@@ -79,9 +79,9 @@ new
 
 - [入力元基準の相対パス]
 
-## Automatic input preparation
+## Non-automatic input candidates
 
-- [変換計画、専用中間入力、またはNone]
+- [manual-input/への人手配置候補、またはNone]
 
 ## Diagnostics
 
@@ -137,10 +137,10 @@ Place optional source files in manual-input/, then invoke this skill again with 
 
 | Classification | Meaning |
 |---|---|
-| Include | knowledge-sourceモードの入力に含める |
-| Exclude | `.env`、`.env.*`、一時ファイル、明白な重複、無関係資料など、理由を記録して除外する |
-| Convert first | 必要な非テキスト資料を検証可能な方法でテキスト化してから含める |
-| Confirm | 版、正確性、機密性、権限、読取可否など、人の判断を待つ |
+| Auto include | `miku-text-bundle`が扱えるテキスト系ファイル。原則すべてknowledge-sourceモードの入力に含める |
+| Manual candidate | 自動処理しない非テキスト資料。必要なら人が準備して`manual-input/`へ置く |
+| Exclude | `.env`、`.env.*`、秘密情報、出力先、明示的除外、技術的に処理不能なファイルなど、理由を記録して除外する |
+| Confirm | 機密性、権限、読取可否、手動資料としての採否など、人の判断を待つ |
 
 ## 衝突の扱い
 

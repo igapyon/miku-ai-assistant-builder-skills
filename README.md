@@ -43,7 +43,7 @@ ZIP は Agent home 直下へ展開する形式で、内部のスキルは `skill
 
 既存フォルダの変換は、人間が追加資料を準備できるよう二段階で行います。
 
-1. 対象フォルダを棚卸しして自動処理対象を選定し、`manual-input/`への追加資料の準備待ちで停止する。
+1. 対象フォルダを棚卸しし、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定して、`manual-input/`への追加資料の準備待ちで停止する。
 2. スキルを再度起動し、人力資料数から20件中の残り枠を計算して、`miku-text-bundle --mode knowledge-source`の自動バンドル数を調整する。
 3. 手動MarkdownのDOCX変換、準備済みOffice文書の検証、最終`upload/`と`agent-builder-input.md`の生成を行う。
 

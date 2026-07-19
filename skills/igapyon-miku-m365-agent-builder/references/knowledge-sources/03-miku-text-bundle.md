@@ -4,7 +4,7 @@
 
 雑多な入力フォルダからKnowledge sourcesの中間Markdownを生成するときは、本スキルに同梱した`miku-text-bundle`を使用する。上流`miku-text-bundle` v1.5.0以降の`knowledge-source`モードを前提にする。
 
-`miku-text-bundle`はテキスト系ファイルの収集、決定的な分割、出典追跡、診断を担当する。本スキルはAgent Builderへの適合性判断、入力範囲の選定、Instructions作成、登録候補の確認、配備用フォルダの構成を担当する。
+`miku-text-bundle`はテキスト系ファイルの収集、決定的な分割、出典追跡、診断を担当する。本スキルはAgent Builderへの適合性判断、安全上・技術上必要な除外、Instructions作成、登録候補の確認、配備用フォルダの構成を担当する。入力元にあるbundle対応テキストを内容の関連性、旧版、重複の推定だけで選別せず、原則すべて収集対象にする。
 
 ## 必須条件
 
@@ -75,7 +75,7 @@ knowledge-index.md
 
 ## 非テキスト資料
 
-`miku-text-bundle`は`.docx`、`.xlsx`、`.pptx`、`.pdf`、画像などを既定で除外する。必要な資料は、内容とレイアウトを検証できる適切な変換手段で先にテキスト化し、その中間入力をknowledge-sourceモードへ渡す。拡張子除外を解除してバイナリを無理に読み込ませない。
+`miku-text-bundle`は`.docx`、`.xlsx`、`.pptx`、`.pdf`、画像などを既定で除外する。これらを自動でテキスト化したり、拡張子除外を解除して無理に読み込ませたりしない。Knowledge sourceとして必要なら、人が準備する資料として`manual-input/`への配置候補を示す。
 
 ## 実行後の確認
 
