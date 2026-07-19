@@ -264,6 +264,26 @@ test("beta status is visible in primary user-facing descriptions", () => {
   assert.match(openaiYaml, /Google Gemini Gem support is early access/);
 });
 
+test("knowledge preparation does not promise exhaustive runtime retrieval", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const principles = fs.readFileSync(
+    path.resolve(skillRoot, "references/knowledge-sources/01-principles.md"),
+    "utf8"
+  );
+  const limitations = fs.readFileSync(
+    path.resolve(skillRoot, "references/platform/02-limitations.md"),
+    "utf8"
+  );
+
+  assert.match(readme, /入力範囲.*全情報を常に検索・取得・参照できること.*保証するものではありません/s);
+  assert.match(readme, /配備後は代表的な質問で回答を確認/);
+  assert.match(skillMd, /準備・登録と、配備後の検索・取得・回答を区別/);
+  assert.match(principles, /登録と実行時の検索を分ける/);
+  assert.match(principles, /完全な全件検索が必要な用途には使わない/);
+  assert.match(limitations, /Knowledge sourcesに存在する情報を必ず発見すること/);
+});
+
 test("file-backed deployment requires an eligible platform environment", () => {
   const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
   const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
