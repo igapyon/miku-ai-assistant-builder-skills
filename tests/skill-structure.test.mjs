@@ -6,7 +6,7 @@ import { execFileSync } from "node:child_process";
 import test from "node:test";
 
 const ROOT = process.cwd();
-const skillName = "igapyon-miku-m365-agent-builder";
+const skillName = "igapyon-miku-ai-assistant-builder";
 const skillRoot = path.resolve(ROOT, "skills", skillName);
 
 test("generated index is required and current", () => {
@@ -74,7 +74,7 @@ test("bundled runtimes match declared versions and digests", () => {
 
 test("skill frontmatter and canonical location match the installable name", () => {
   const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
-  assert.match(skillMd, /^---\n[\s\S]*?^name: igapyon-miku-m365-agent-builder$[\s\S]*?^---$/m);
+  assert.match(skillMd, /^---\n[\s\S]*?^name: igapyon-miku-ai-assistant-builder$[\s\S]*?^---$/m);
   assert.equal(fs.existsSync(path.resolve(ROOT, "SKILL.md")), false);
 });
 

@@ -1,13 +1,13 @@
 {
-  "name": "miku-m365-agent-builder-skills",
-  "version": "0.6.2",
+  "name": "miku-ai-assistant-builder-skills",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=24 <25"
   },
   "mikuIndex": {
-    "path": "skills/igapyon-miku-m365-agent-builder/index.json",
+    "path": "skills/igapyon-miku-ai-assistant-builder/index.json",
     "required": true
   },
   "scripts": {
