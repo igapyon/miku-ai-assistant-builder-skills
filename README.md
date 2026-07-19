@@ -2,6 +2,8 @@
 
 `miku-ai-assistant-builder-skills` は、Microsoft 365 Copilot の Agent Builder に投入するデータを準備する `igapyon-miku-ai-assistant-builder` Agent Skill を提供します。
 
+> **Beta:** 本スキル全体はベータ版です。対応サービスの仕様差や利用環境ごとの制約、フォルダ変換ワークフローを継続して検証・調整しているため、今後の更新で仕様や出力が変更される可能性があります。
+
 Copilot Studio 固有のエージェント構築ではなく、Microsoft 365 Copilot 内の軽量な Agent Builder を主対象とします。Google Gemini の Gem には早期アクセス機能として軽量対応します。
 
 生成する配備データは、人が対象サービスへ設定するためのものです。このスキルはファイルのアップロード、共有設定、外部Webや公開リポジトリへの公開を行いません。Agent Builderでは端末からのファイル添付を利用できるライセンスまたは従量課金環境が前提です。Gem早期アクセスではKnowledgeへのファイル追加を利用できるアカウントと管理者設定が前提です。
