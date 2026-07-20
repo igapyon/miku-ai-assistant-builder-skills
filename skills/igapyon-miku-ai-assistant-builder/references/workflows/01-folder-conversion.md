@@ -46,6 +46,20 @@ new
 - 再開時は`work/preparation-status.md`を正本として状態と入出力を復元する。
 - 状態ファイルがない、不整合、または`finalized`なら、再開可能と推測せず停止する。
 
+## 出力ディレクトリ
+
+利用者が出力先を明示しない場合は、確認済みの入力元を扱う作業リポジトリの次の場所を既定とする。現在位置やスキルのインストール元だけから作業リポジトリを決めない。入力元に対応する書き込み可能な作業リポジトリを確定できない場合は、基準ディレクトリを利用者へ確認する。
+
+```text
+workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/
+```
+
+- `YYYYMMDD-HHmm`は新規変換を開始したローカル日時とする。
+- 同じ分の実行ディレクトリが既にある場合は上書きせず、`YYYYMMDD-HHmm-02`、`YYYYMMDD-HHmm-03`のように連番を付ける。
+- 利用者が`temp1/`など別の基準ディレクトリを指定した場合も、その下に`miku-ai-assistant-builder/<実行ID>/`を作る。
+- 第1段階で実行ディレクトリを一度だけ作る。第2段階では新しい実行IDを発行せず、利用者が指定した既存の`work/preparation-status.md`が属する実行ディレクトリを再利用する。
+- 作成した実行ディレクトリは自動処理入力から明示的に除外する。`workplace/`を既定にする場合も、ランタイムの暗黙除外だけに依存せず状態ファイルへ除外を記録する。
+
 ## 安全原則
 
 - 入力元と`manual-input/`を読み取り専用として扱う。
@@ -59,7 +73,7 @@ new
 
 ## 第1段階: 自動テキスト入力の確定と準備待ち
 
-1. 開始前確認を完了し、配備先、入力元、自動処理範囲を復唱する。その後、エージェントの目的、対象利用者、代表的な質問、正式資料、出力先を特定する。GemではMarkdownまたはDOCXも選ぶ。質問前に必須項目を仮定しない。利用者が明示的に委任した項目だけは、想定を列挙して補完する。
+1. 開始前確認を完了し、配備先、入力元、自動処理範囲を復唱する。その後、エージェントの目的、対象利用者、代表的な質問、正式資料、出力先を特定する。出力先の明示指定がなければ、前述の日時付き既定出力先を採用する。GemではMarkdownまたはDOCXも選ぶ。質問前に必須項目を仮定しない。利用者が明示的に委任した項目だけは、想定を列挙して補完する。
 2. ファイルの相対パス、形式、サイズ、更新日時、文字コード、読取可否を棚卸しする。
 3. `.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルを既定で`Auto include`へ分類する。内容の関連性、推定テーマ、旧版、重複候補だけを理由に対象を絞り込まない。
 4. `.env`と`.env.*`、秘密情報、出力先、利用者が明示した除外、ランタイムが技術的に扱えないファイルだけを`Exclude`または`Confirm`へ分類し、理由を記録する。
@@ -91,6 +105,8 @@ new
 - Gem knowledge format: [markdown、docx、またはN/A]
 - Source directory: [入力元]
 - Output directory: [出力先]
+- Output base directory: [workplace、temp1、または利用者指定の基準ディレクトリ]
+- Run ID: [YYYYMMDD-HHmmまたは衝突回避連番付きID]
 - Created at: [日時とタイムゾーン]
 - Text bundle runtime: [版とバックエンド]
 - Text bundle mode: knowledge-source
@@ -130,7 +146,7 @@ Place optional source files in manual-input/, then invoke this skill again with 
 
 ```text
 手動追加資料の配置先
-- フルパス: /resolved/output/ai-assistant-builder-output/manual-input
+- フルパス: /resolved/repository/workplace/miku-ai-assistant-builder/20260720-2145/manual-input
 - 出力先基準: manual-input/
 ```
 
@@ -168,7 +184,7 @@ Place optional source files in manual-input/, then invoke this skill again with 
 15. MarkdownまたはDOCXの開封可否、元相対パス、ファイル境界、リンク、秘密情報と、準備済み文書の読取可否を検証する。
 16. 自動生成物と手動資料を合わせた最終候補総数が、対象サービスで確認した上限以下であることを確認する。
 17. すべての検証に成功した場合だけ、最終`upload/`を登録候補のフラット構成へ置き換える。
-18. `upload/`の実在ファイルからKnowledge一覧を作り、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`へbasenameだけを記載する。
+18. `upload/`の実在ファイルからKnowledge一覧を作り、Agent Builderでは`agent-builder-input.md`、GemではName、Description、Custom instructions、Knowledge、Items to confirmを持つ`gem-input.md`へbasenameだけを記載する。
 19. `upload/`の未参照ファイルと入力用Markdownの参照切れがないことを双方向に確認する。
 20. `items-to-confirm.md`を確定し、状態を`finalized`へ更新する。
 21. 利用者へ`upload/`の登録候補、手動資料数、自動生成数、合計数と確認事項を示す。
@@ -196,6 +212,8 @@ Place optional source files in manual-input/, then invoke this skill again with 
 - `preparation-status.md`から別セッションで再開できる。
 - `manual-input/`の原本が変更されていない。
 - `agent-builder-input.md`または`gem-input.md`が対象サービスの入力項目順になっている。
+- `gem-input.md`にName、Description、Custom instructions、Knowledge、Items to confirmがこの順で存在する。
+- 第2段階が第1段階と同じ日時付き実行ディレクトリを再利用している。
 - Knowledge sources欄が`upload/`に実在するbasenameだけを使う。
 - `upload/`が登録候補だけのフラット構成になっている。
 - 自動生成Markdownと手動Markdownが選択どおりMarkdownのまま配置されるか、対応するDOCXへ変換されている。

@@ -14,12 +14,39 @@ Gem対応は、主対象であるMicrosoft 365 Copilot Agent Builder向けワー
 
 ## 入力項目
 
-Gemでは少なくとも名前、Instructions、Knowledgeファイルを人が確認して設定する。生成する`gem-input.md`には、次の順で候補を記載する。
+生成する`gem-input.md`はAgent Builder向け入力と共通する中心情報を保ち、次の順で候補を記載する。
 
 1. Name
-2. Instructions
-3. Knowledge
-4. Items to confirm
+2. Description
+3. Custom instructions
+4. Knowledge
+5. Items to confirm
+
+`Custom instructions`はGem作成画面のInstructions欄へ転記する内容である。`Description`はGemの目的、対象利用者、できることを短く示す。利用者の実画面に独立したDescription欄がある場合はそこへ転記し、独立した欄がない場合も配備時の確認用概要として`gem-input.md`に保持する。DescriptionをCustom instructionsへ黙って混ぜない。
+
+Agent BuilderとGemの共通コアはName、Description、Instructions、Knowledge、Items to confirmである。Agent BuilderのStarter promptsとCapabilitiesはサービス固有の追加項目として扱い、Gemへ存在すると推測して追加しない。
+
+標準形は次のとおり。
+
+```markdown
+# Google Gemini Gem Input
+
+## Name
+[入力値]
+
+## Description
+[入力値]
+
+## Custom instructions
+[構造化Markdown。Gem画面のInstructions欄へ転記]
+
+## Knowledge
+| Source | Type | Purpose | Confirmed |
+|---|---|---|---|
+
+## Items to confirm
+- [未確定事項]
+```
 
 設定項目が利用者の実画面と異なる場合は、実画面を優先し、未確認事項を`items-to-confirm.md`へ記録する。
 
@@ -38,7 +65,7 @@ Googleの現行ヘルプは、GemのKnowledgeへ対応ファイルを追加で�
 - `work/knowledge-markdown/*.md`: 自動生成されたKnowledge資料。Markdown選択では最終候補へコピーし、DOCX選択では変換元にする。
 - `work/knowledge-index.md`: 管理用index。Gemへ添付しない。
 - `work/preparation-status.md`: 再開用状態。Gemへ添付しない。
-- `gem-input.md`: Gem画面への転記用。Knowledgeへ添付しない。
+- `gem-input.md`: Name、Description、Custom instructions、Knowledge、Items to confirmをまとめたGem画面への転記用。Knowledgeへ添付しない。
 - `items-to-confirm.md`: 人の確認用。Knowledgeへ添付しない。
 - `upload/`: 利用者がGemのKnowledgeへ追加する最終候補だけを置く。
 
@@ -55,4 +82,4 @@ Googleの現行ヘルプは、GemのKnowledgeへ対応ファイルを追加で�
 - [Upload and analyze files in Gemini Apps](https://support.google.com/gemini/answer/14903178)
 - [Share a Gem from Gemini Apps](https://support.google.com/gemini/answer/16504957)
 
-この資料は2026-07-19時点で整理した。変更されやすい仕様は、最新のGoogle公式情報と利用者の実画面を優先する。
+この資料は2026-07-20時点で整理した。変更されやすい仕様は、最新のGoogle公式情報と利用者の実画面を優先する。

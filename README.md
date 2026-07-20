@@ -62,6 +62,14 @@ ZIP は Agent home 直下へ展開する形式で、内部のスキルは `skill
 3. スキルを再度起動し、対象サービスで利用可能なファイル枠に収まるよう、`miku-text-bundle --mode knowledge-source`の自動バンドル数を調整する。
 4. 選択した形式で最終`upload/`を構成し、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を生成する。
 
+出力先の明示指定がなければ、新規変換ごとに次の日時付きディレクトリを作ります。
+
+```text
+workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/
+```
+
+同じ分に既存ディレクトリがある場合は`-02`、`-03`を付け、上書きしません。第2段階では新しい日時ディレクトリを作らず、第1段階の`work/preparation-status.md`がある同じディレクトリを再利用します。利用者が`temp1/`など別の基準ディレクトリを指定した場合も、その下に同じ`miku-ai-assistant-builder/<実行ID>/`構造を作ります。
+
 `work/preparation-status.md`が別セッションからの再開状態を保持します。`manual-input/`の人間管理原本は変更しません。
 
 手動追加資料の準備を依頼するときは、作成済み`manual-input/`の解決済みフルパスと出力先基準の相対パスを利用者へ示します。フルパスは人向けのローカル作業案内だけに使い、Knowledgeファイルには含めません。
@@ -75,6 +83,8 @@ Agent Builderでは人力資料を最大19件とし、自動生成Knowledge sour
 - Gem早期アクセスのDOCX選択: Agent Builderと同様に`miku-md2docx`でDOCX化します。
 
 `work/knowledge-markdown/`は自動生成されたKnowledge資料の中間置き場です。`work/knowledge-index.md`と`work/preparation-status.md`は管理用であり、添付しません。`agent-builder-input.md`と`gem-input.md`は設定画面への転記用、`items-to-confirm.md`は人の確認用であり、いずれもKnowledgeファイルとして添付しません。
+
+`gem-input.md`は、Agent Builder向けと同じ中心情報をName、Description、Custom instructions、Knowledge、Items to confirmの順で整理します。Custom instructionsはGem画面のInstructions欄へ転記する内容です。Agent Builder固有のStarter promptsとCapabilitiesだけはGemへ自動的に追加しません。
 
 ## Agent Builderへの配備データの役割
 
