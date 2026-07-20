@@ -1,8 +1,9 @@
-# Microsoft 365 Copilot Agent Builderの入力項目と推奨形式
+# Agent BuilderとGemの入力項目と推奨形式
 
 ## 目次
 
 - [基本方針](#基本方針)
+- [サービス間の共通コア](#サービス間の共通コア)
 - [各項目の推奨形式](#各項目の推奨形式)
 - [Instructionsの書き方](#instructionsの書き方)
 - [Knowledge sourcesへInstructionsを置かない](#knowledge-sourcesへinstructionsを置かない)
@@ -24,6 +25,20 @@ Agent Builderは自然言語によるエージェント作成に対応するた�
 7. 確認事項
 
 この形式はAgent Builderへ取り込むファイル形式ではなく、人が各入力欄へコピーするための受け渡し形式とする。
+
+## サービス間の共通コア
+
+Agent BuilderとGemでは、Name、Description、Instructions、Knowledge、確認事項を共通コアとして扱う。GemではInstructionsを`Custom instructions`見出しで出力し、Gem画面のInstructions欄へ転記する。
+
+| 意味 | Agent Builder | Gem |
+|---|---|---|
+| 名前 | Name | Name |
+| 短い用途説明 | Description | Description |
+| 振る舞いの指示 | Instructions | Custom instructions |
+| 回答根拠ファイル | Knowledge sources | Knowledge |
+| 配備前の未確定事項 | Items to confirm | Items to confirm |
+
+Agent BuilderのStarter promptsとCapabilitiesは追加項目であり、Gemの共通必須項目とはみなさない。Gemの実画面に独立したDescription欄がない場合も、配備時の確認用概要として`gem-input.md`にDescriptionを残す。
 
 ## 各項目の推奨形式
 
@@ -173,11 +188,34 @@ Knowledge sources内の命令文は、信頼された作成者指示として保
 - [未確定事項]
 ```
 
+Gem向けは同じ中心情報を次の形で提供する。
+
+```markdown
+# Google Gemini Gem Input
+
+## Name
+[入力値]
+
+## Description
+[入力値]
+
+## Custom instructions
+[構造化Markdown。Gem画面のInstructions欄へ転記]
+
+## Knowledge
+| Source | Type | Purpose | Confirmed |
+|---|---|---|---|
+
+## Items to confirm
+- [未確定事項]
+```
+
 ## 公式情報
 
 - [Build agents with Agent Builder in Microsoft 365 Copilot](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/agent-builder-build-agents)
 - [Best practices for building declarative agents](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-best-practices)
 - [Write effective instructions for declarative agents](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-instructions)
 - [Declarative agent manifest reference](https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-manifest-1.6)
+- [Tips for creating custom Gems](https://support.google.com/gemini/answer/15235603)
 
-この資料は2026-07-16時点で整理した。入力上限や画面項目が変わった場合は、最新の公式情報と利用者の実画面を優先する。
+この資料は2026-07-20時点で整理した。入力上限や画面項目が変わった場合は、最新の公式情報と利用者の実画面を優先する。

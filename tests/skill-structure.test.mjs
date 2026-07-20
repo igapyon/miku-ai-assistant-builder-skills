@@ -118,6 +118,42 @@ test("folder conversion stops after preparation and resumes from persistent stat
   assert.match(readme, /解決済みフルパスと出力先基準の相対パスを利用者へ示します/);
 });
 
+test("conversion outputs use timestamped run directories without changing them on resume", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+
+  for (const content of [readme, skillMd, workflow]) {
+    assert.match(content, /workplace\/miku-ai-assistant-builder\/YYYYMMDD-HHmm/);
+    assert.match(content, /-02/);
+  }
+  assert.match(skillMd, /第2段階では新しい日時ディレクトリを作らず/);
+  assert.match(workflow, /既存の`work\/preparation-status\.md`が属する実行ディレクトリを再利用/);
+  assert.match(workflow, /`temp1\/`など別の基準ディレクトリ/);
+});
+
+test("Gem handoff mirrors the shared Agent Builder input core", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const inputFields = fs.readFileSync(
+    path.resolve(skillRoot, "references/instructions/01-input-fields.md"),
+    "utf8"
+  );
+  const gemReference = fs.readFileSync(
+    path.resolve(skillRoot, "references/platform/03-gemini-gems.md"),
+    "utf8"
+  );
+
+  for (const content of [readme, skillMd, inputFields, gemReference]) {
+    assert.match(content, /Name.*Description.*Custom instructions.*Knowledge.*Items to confirm/s);
+  }
+  assert.match(gemReference, /Custom instructions.*Gem作成画面のInstructions欄へ転記/s);
+  assert.match(inputFields, /Starter promptsとCapabilities.*追加項目/);
+});
+
 test("new conversion waits for explicit platform and automatic-input scope", () => {
   const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
   const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");

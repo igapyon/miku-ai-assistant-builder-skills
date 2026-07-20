@@ -63,7 +63,7 @@ Agent Builder向けは、端末からの埋め込みファイルを利用でき�
 
 ### 第1段階: 自動テキスト入力の確定と準備待ち
 
-1. 開始確認ゲートで確定した対象サービスと自動処理の入力範囲を復唱する。その後、利用者の目的、想定利用者、代表的な質問、出力先を確認する。GemではMarkdownとDOCXのどちらを使うかも確認する。必須項目は質問前に仮定で記録しない。利用者が明示的に指定を委任した項目だけは、回答後に想定を明示して補完する。
+1. 開始確認ゲートで確定した対象サービスと自動処理の入力範囲を復唱する。その後、利用者の目的、想定利用者、代表的な質問、出力先を確認する。出力先の明示指定がなければ、確認済みの入力元を扱う作業リポジトリの`workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/`を新規変換の既定出力先にする。スキルのインストール元を、現在位置だけを理由に出力先として使わない。GemではMarkdownとDOCXのどちらを使うかも確認する。必須項目は質問前に仮定で記録しない。利用者が明示的に指定を委任した項目だけは、回答後に想定を明示して補完する。
 2. Agent Builderでは[制限・設計上の注意](references/platform/02-limitations.md)、Gemでは[Google Gemini Gemの基本事項](references/platform/03-gemini-gems.md)を使い、ファイル追加機能を利用できる環境であることと適合性を確認する。
 3. 原本を変更せずに棚卸しする。入力元にある`.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルは原則すべて自動処理対象とする。内容の関連性、旧版、重複の推定だけを理由に自動除外しない。`.env`と`.env.*`、秘密情報、出力先、明示的に指定された除外、ランタイムが技術的に扱えないファイルだけを理由付きで除外または確認待ちにする。
 4. DOCX、PPTX、XLSX、PDF、画像などの非テキスト資料を自動でテキスト化せず、`miku-text-bundle`の自動処理対象に含めない。Knowledge sourceとして必要なら、人が準備して`manual-input/`へ置く候補として記録する。この時点ではバンドルを生成しない。
@@ -82,38 +82,44 @@ Agent Builder向けは、端末からの埋め込みファイルを利用でき�
 7. 自動生成物と手動追加物の出力basenameが衝突する場合は、自動改名や上書きをせず、`upload/`を変更する前に停止する。
 8. 元リポジトリ基準の相対パスとファイル境界が自動生成MarkdownまたはDOCX本文に残ることを確認する。Knowledgeファイル間の相対リンクには依存せず、外部参照には確認済みの絶対URLを使う。
 9. InstructionsとKnowledge sourcesを分離する。振る舞い、処理順、口調、禁止事項、出力形式はInstructionsへ置き、回答根拠となる事実だけをKnowledge sourcesへ置く。
-10. Agent Builderでは[入力項目と推奨形式](references/instructions/01-input-fields.md)に従って`agent-builder-input.md`を作る。Gemでは[Google Gemini Gemの基本事項](references/platform/03-gemini-gems.md)に従って`gem-input.md`を作る。Instructionsには登録済みKnowledge sourcesを優先して検索し、見つからない情報を推測しない方針を含める。いずれもKnowledge一覧では`upload/`を付けず、`upload/`に実在するbasenameだけを記載する。
+10. [入力項目と推奨形式](references/instructions/01-input-fields.md)に従い、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を作る。GemにはName、Description、Custom instructions、Knowledge、Items to confirmをこの順で含める。Custom instructionsはGem画面のInstructions欄へ転記する内容とする。Instructionsには登録済みKnowledge sourcesを優先して検索し、見つからない情報を推測しない方針を含める。いずれもKnowledge一覧では`upload/`を付けず、`upload/`に実在するbasenameだけを記載する。
 11. 対象サービスで確認した上限以内であることを含め、対応、開封可否、サイズ、リンク、重複、矛盾、機密情報、スキップ、参照切れ、未参照ファイルを確認する。問題がなければ`preparation-status.md`へ対象サービス、形式、枠配分と実績を記録し、状態を`finalized`へ更新して利用者へ最終確認を求める。
 
 ## Output
 
 通常は、Agent BuilderまたはGemの各入力欄へコピーできる単一のMarkdownを返す。
 
-既存フォルダを変換する場合は、元フォルダとは別の出力先に次の配備用フォルダを作る。
+既存フォルダを変換する場合は、元フォルダとは別の出力先に次の配備用フォルダを作る。利用者が出力先を明示しなければ、作業リポジトリの`workplace/`を基準にする。
 
 ```text
-ai-assistant-builder-output/
-├── manual-input/
-│   ├── additional-guide.md
-│   ├── official-document.docx
-│   ├── reference.pptx
-│   └── data.xlsx
-├── upload/
-│   ├── knowledge-001.md または knowledge-001.docx
-│   ├── knowledge-002.md または knowledge-002.docx
-│   ├── additional-guide.md または additional-guide.docx
-│   ├── official-document.docx
-│   ├── reference.pptx
-│   └── data.xlsx
-├── work/
-│   ├── knowledge-markdown/
-│   │   ├── knowledge-001.md
-│   │   └── knowledge-002.md
-│   ├── knowledge-index.md
-│   └── preparation-status.md
-├── agent-builder-input.md または gem-input.md
-└── items-to-confirm.md
+workplace/
+└── miku-ai-assistant-builder/
+    └── YYYYMMDD-HHmm/
+        ├── manual-input/
+        │   ├── additional-guide.md
+        │   ├── official-document.docx
+        │   ├── reference.pptx
+        │   └── data.xlsx
+        ├── upload/
+        │   ├── knowledge-001.md または knowledge-001.docx
+        │   ├── knowledge-002.md または knowledge-002.docx
+        │   ├── additional-guide.md または additional-guide.docx
+        │   ├── official-document.docx
+        │   ├── reference.pptx
+        │   └── data.xlsx
+        ├── work/
+        │   ├── knowledge-markdown/
+        │   │   ├── knowledge-001.md
+        │   │   └── knowledge-002.md
+        │   ├── knowledge-index.md
+        │   └── preparation-status.md
+        ├── agent-builder-input.md または gem-input.md
+        └── items-to-confirm.md
 ```
+
+- 新規変換の実行IDはローカル時刻の`YYYYMMDD-HHmm`とする。同じ分のディレクトリが既に存在する場合は上書きせず、`-02`、`-03`の連番を付ける。
+- 第1段階で実行ディレクトリを一度だけ作る。第2段階では新しい日時ディレクトリを作らず、指定された既存の`work/preparation-status.md`と同じ実行ディレクトリを再利用する。
+- `temp1/`など別の基準ディレクトリが利用者から指定された場合も、その下を`miku-ai-assistant-builder/YYYYMMDD-HHmm/`の形にする。
 
 - `manual-input/`: 人間が追加する原本を置く。第2段階でも変更、上書き、削除しない。
 - `upload/`: 選択形式の自動生成資料、手動Markdown、検証済みの準備済み資料を、最終登録候補としてフラットに置く。
@@ -121,7 +127,7 @@ ai-assistant-builder-output/
 - `work/knowledge-index.md`: 実行設定、元ファイル対応、スキップ、警告、marker、旧生成物候補を記録する。DOCX化・登録ともに行わない。
 - `work/preparation-status.md`: `awaiting-manual-input`または`finalized`の状態と、別セッションで再開するための情報を記録する。登録しない。
 - `agent-builder-input.md`: Agent BuilderのConfigure画面への転記用。Knowledge sourceへ登録しない。
-- `gem-input.md`: Gem画面への転記用。Knowledgeへ登録しない。
+- `gem-input.md`: Gem画面への転記用。Name、Description、Custom instructions、Knowledge、Items to confirmを含める。Knowledgeへ登録しない。
 - `items-to-confirm.md`: 版の衝突、正確性、機密性、権限、未対応形式など、人の判断が必要な事項を記載する。
 
 ## Constraints
@@ -134,6 +140,8 @@ ai-assistant-builder-output/
 - ファイルのアップロード、共有設定、外部Webや公開リポジトリへの公開を行わない。
 - 利用者がAgent BuilderまたはGemへ設定する前に、対象テナントまたはアカウント、共有範囲、閲覧権限を確認事項として示す。
 - 入力元のフォルダやファイルを上書き、移動、削除しない。
+- 新規変換では日時付き実行ディレクトリを新規作成し、既存ディレクトリを黙って再利用または上書きしない。
+- 第2段階の再開時は、状態ファイルが属する既存の日時付き実行ディレクトリを使い、新しい日時付き実行ディレクトリへ分岐しない。
 - 開始確認ゲートが完了するまで入力フォルダを棚卸しせず、自動処理対象を選定しない。
 - `manual-input/`内の人間管理原本を上書き、移動、削除しない。
 - 第1段階と第2段階を同じターンで続けて実行しない。
