@@ -1,4 +1,4 @@
 interface:
   display_name: "Miku AI Assistant Builder (Beta)"
   short_description: "ベータ版: Agent Builder向け配備資料を二段階で作成"
-  default_prompt: "Use the beta $igapyon-miku-ai-assistant-builder skill to prepare or resume a two-stage folder conversion primarily for Microsoft 365 Copilot Agent Builder. Google Gemini Gem support is early access; when selected, confirm whether Markdown should remain Markdown or be converted to DOCX."
+  default_prompt: "Use the beta $igapyon-miku-ai-assistant-builder skill. Google Gemini Gem support is early access. Before a new conversion, unless already explicit in the conversation, ask whether the target is Microsoft 365 Copilot Agent Builder or Google Gemini Gem Classic and ask for the exact automatic-input folder scope; wait for the answers before inspecting files. Only after the user explicitly says there is no preference or delegates the choice may you fill that item with a narrow, stated assumption."

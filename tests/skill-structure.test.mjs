@@ -94,6 +94,7 @@ test("deployment workflow produces flat validated uploads with traceable source 
 });
 
 test("folder conversion stops after preparation and resumes from persistent state", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
   const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
   const workflow = fs.readFileSync(
     path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
@@ -108,6 +109,40 @@ test("folder conversion stops after preparation and resumes from persistent stat
   assert.match(workflow, /第1段階では次を行わない/);
   assert.match(workflow, /番号付きMarkdownのDOCX変換/);
   assert.match(workflow, /追加資料がない場合も利用者の明示的な確認/);
+  assert.match(skillMd, /`manual-input\/`の解決済みフルパスと出力先基準の相対パス/);
+  assert.match(skillMd, /`~`、未展開の環境変数.*相対パスだけで案内しない/);
+  assert.match(workflow, /## 手動追加資料の配置案内/);
+  assert.match(workflow, /ディレクトリが実在することを確認/);
+  assert.match(workflow, /「`manual-input\/`へ置いてください」だけで終えず/);
+  assert.match(workflow, /フルパスは人向けのローカル作業案内.*Knowledgeファイル.*含めない/);
+  assert.match(readme, /解決済みフルパスと出力先基準の相対パスを利用者へ示します/);
+});
+
+test("new conversion waits for explicit platform and automatic-input scope", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+  const openaiYaml = fs.readFileSync(
+    path.resolve(skillRoot, "agents/openai.yaml"),
+    "utf8"
+  );
+
+  assert.match(skillMd, /## 開始確認ゲート/);
+  assert.match(skillMd, /Microsoft 365 Copilot Agent Builder.*Google Gemini Gem Classic/);
+  assert.match(skillMd, /自動処理の入力範囲/);
+  assert.match(skillMd, /どちらか一方でも未確定なら.*回答を待って停止する/);
+  assert.match(skillMd, /質問する前から、現在の作業ディレクトリ.*リポジトリルート.*開いているファイル.*決め込まない/);
+  assert.match(skillMd, /`特に指定なし`、`おまかせ`.*回答後に合理的な想定で補完してよい/);
+  assert.match(skillMd, /無回答、曖昧な返答、話題の変更を委任とみなさない/);
+  assert.match(workflow, /## 開始前に人へ確認すること/);
+  assert.match(workflow, /確認前は入力フォルダの一覧取得や内容確認を行わず/);
+  assert.match(workflow, /委任された項目だけを補完する/);
+  assert.match(readme, /「特に指定なし」「おまかせ」.*回答後に初めて/);
+  assert.match(openaiYaml, /wait for the answers before inspecting files/);
+  assert.match(openaiYaml, /explicitly says there is no preference or delegates the choice/);
 });
 
 test("manual files determine the remaining automatic upload budget", () => {
