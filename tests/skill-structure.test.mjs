@@ -310,11 +310,11 @@ test("Gem deployment supports explicit Markdown or DOCX selection", () => {
   );
 
   assert.match(skillMd, /Google GeminiのGem/);
-  assert.match(skillMd, /Agent Builderを主対象.*Gemには早期アクセス/);
+  assert.match(skillMd, /Agent Builderを主対象.*Gemにも対応/);
   assert.match(skillMd, /Gemの場合.*`markdown`.*`docx`.*推測で選ばない/);
   assert.match(skillMd, /Gemの`markdown`選択では`miku-md2docx`を実行せず/);
   assert.match(gemReference, /GemのKnowledgeへファイルを追加できる/);
-  assert.match(gemReference, /Agent Builderと同等の機能、検証範囲、動作保証は提供しない/);
+  assert.match(gemReference, /対象サービスごとに機能、上限、検証条件が異なる.*同一仕様とはみなさない/);
   assert.match(gemReference, /`gem-input\.md`.*Knowledgeへ添付しない/);
   assert.match(workflow, /Gemでは20件を流用しない/);
 });
@@ -332,7 +332,7 @@ test("beta status is visible in primary user-facing descriptions", () => {
   assert.match(skillMd, /本スキル全体はベータ版/);
   assert.match(openaiYaml, /display_name: "Miku AI Assistant Builder \(Beta\)"/);
   assert.match(openaiYaml, /short_description: "ベータ版:/);
-  assert.match(openaiYaml, /Google Gemini Gem support is early access/);
+  assert.match(openaiYaml, /Use the beta \$igapyon-miku-ai-assistant-builder skill/);
 });
 
 test("knowledge preparation does not promise exhaustive runtime retrieval", () => {
@@ -364,7 +364,7 @@ test("file-backed deployment requires an eligible platform environment", () => {
   );
 
   assert.match(readme, /Agent Builderでは.*ファイル添付を利用できるライセンスまたは従量課金環境/);
-  assert.match(skillMd, /Gem早期アクセスは.*Knowledgeへのファイル追加を利用できるアカウント、プラン、管理者設定/);
+  assert.match(skillMd, /Gemは.*Knowledgeへのファイル追加を利用できるアカウント、プラン、管理者設定/);
   assert.match(limitations, /端末からの埋め込みファイルを利用できるライセンスまたは従量課金環境だけを対象/);
 });
 

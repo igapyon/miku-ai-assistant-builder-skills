@@ -1,17 +1,17 @@
 ---
 name: igapyon-miku-ai-assistant-builder
-description: ベータ版。Microsoft 365 Copilot内の軽量なAgent Builderに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Google GeminiのGemには早期アクセスとして軽量対応する。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階ではAgent Builder向けMarkdownをDOCX化し、Gem早期アクセスではMarkdownのまま使うか同梱`miku-md2docx`でDOCX化するかを利用者が選ぶ。ファイル添付を利用できるライセンス、アカウント、管理者設定が前提。`igapyon-miku-ai-assistant-builder`または`miku-ai-assistant-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換やその再開が依頼されたときに使用する。Copilot Studio固有のエージェント作成には使用しない。
+description: ベータ版。Microsoft 365 Copilot内の軽量なAgent BuilderまたはGoogle GeminiのGemに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Gemにも対応する。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階ではAgent Builder向けMarkdownをDOCX化し、GemではMarkdownのまま使うか同梱`miku-md2docx`でDOCX化するかを利用者が選ぶ。ファイル添付を利用できるライセンス、アカウント、管理者設定が前提。`igapyon-miku-ai-assistant-builder`または`miku-ai-assistant-builder`が明示されたとき、またはこのスキルを使ったフォルダ変換やその再開が依頼されたときに使用する。Copilot Studio固有のエージェント作成には使用しない。
 ---
 
 # Igapyon Miku AI Assistant Builder
 
-> **Beta:** 本スキル全体はベータ版であり、仕様と出力は今後の検証・調整によって変更される可能性がある。Microsoft 365 Copilot Agent Builderを主対象とし、Google Gemini Gem対応は早期アクセスとして扱う。
+> **Beta:** 本スキル全体はベータ版であり、仕様と出力は今後の検証・調整によって変更される可能性がある。Microsoft 365 Copilot Agent Builderを主対象とし、Google Gemini Gemにも対応する。
 
 ## 開始確認ゲート
 
 新規変換を始める前に、それ以前の会話で次の2点が利用者によって明示されているか確認する。
 
-1. 配備先: `Microsoft 365 Copilot Agent Builder`または`Google Gemini Gem Classic`（早期アクセス）
+1. 配備先: `Microsoft 365 Copilot Agent Builder`または`Google Gemini Gem Classic`
 2. 自動処理の入力範囲: 入力元となる正確なフォルダと、その配下で対象にするサブフォルダまたは除外範囲
 
 どちらか一方でも未確定なら、2点をまとめて利用者へ質問し、その回答を待って停止する。質問する前から、現在の作業ディレクトリ、リポジトリルート、開いているファイル、添付ファイル、ファイル名を使って決め込まない。回答前は入力フォルダの棚卸し、内容の読み取り、対象ファイルの選定、出力フォルダや状態ファイルの作成、同梱CLIの実行を開始しない。
@@ -24,7 +24,7 @@ description: ベータ版。Microsoft 365 Copilot内の軽量なAgent Builderに
 
 ## Basic principle
 
-基本として、次の流れを実現するAgent Builder向けの入力データを提供する。Gem向けは早期アクセスとして同じ流れを可能な範囲で再利用する。
+基本として、次の流れを実現するAgent BuilderまたはGem向けの入力データを提供する。Agent Builderを主対象としつつ、対象サービスの仕様差に応じて同じ流れを使い分ける。
 
 > 「利用者の質問」→「情報を探す・整理する」→「自然言語で回答する」
 
@@ -34,19 +34,19 @@ description: ベータ版。Microsoft 365 Copilot内の軽量なAgent Builderに
 
 ## Purpose
 
-Microsoft 365 CopilotのAgent Builder向け入力データを作成する。Google GeminiのGem向け入力データは早期アクセスとして扱う。
+Microsoft 365 CopilotのAgent BuilderまたはGoogle GeminiのGem向け入力データを作成する。Agent Builderを主対象とする。
 
 利用者の要望から新規に設計するだけでなく、文書、メモ、ソースコードなどが混在する既存フォルダを棚卸しし、選択したサービスへ設定しやすい配備用フォルダへ変換する。
 
 ここでいう配備用フォルダは、対象サービスへ直接インポートする独自ファイル形式ではない。設定画面へコピーする入力値と、登録候補のKnowledgeファイルを人が確認・配置できる受け渡し形式を指す。
 
-Agent Builder向けは、端末からの埋め込みファイルを利用できるMicrosoft 365 Copilotライセンスまたは従量課金環境を対象とする。Gem早期アクセスは、Knowledgeへのファイル追加を利用できるアカウント、プラン、管理者設定を対象とする。GemではAgent Builderと同等の機能、検証範囲、動作保証を前提にしない。
+Agent Builder向けは、端末からの埋め込みファイルを利用できるMicrosoft 365 Copilotライセンスまたは従量課金環境を対象とする。Gem向けは、Knowledgeへのファイル追加を利用できるアカウント、プラン、管理者設定を対象とする。対象サービスごとに機能、上限、検証条件が異なるため、Agent BuilderとGemを同一仕様とはみなさない。
 
 作業前に次の資料を読む。
 
 - Agent Builderの対象範囲を確認するときは、[基礎情報](references/platform/01-baseline.md)を読む。
 - 実現可能性を判断するときは、[制限・設計上の注意](references/platform/02-limitations.md)を読む。
-- Gem早期アクセスの入力項目、MarkdownとDOCXの選択、アカウント条件を確認するときは、[Google Gemini Gem早期アクセスの基本事項](references/platform/03-gemini-gems.md)を読む。
+- Gemの入力項目、MarkdownとDOCXの選択、アカウント条件を確認するときは、[Google Gemini Gemの基本事項](references/platform/03-gemini-gems.md)を読む。
 - 入力欄と推奨形式を作るときは、[入力項目と推奨形式](references/instructions/01-input-fields.md)を読む。
 - Knowledge sourcesを設計するときは、[基本原則](references/knowledge-sources/01-principles.md)と[コンテンツ設計](references/knowledge-sources/02-content-design.md)を読む。
 - 既存フォルダを変換するとき、または準備済みの変換を再開するときは、[雑多なフォルダの二段階変換](references/workflows/01-folder-conversion.md)を読む。
@@ -132,9 +132,9 @@ workplace/
 
 ## Constraints
 
-- Microsoft 365 Copilot内のAgent Builderを主対象にする。Google GeminiのGemは早期アクセスとして扱う。
+- Microsoft 365 Copilot内のAgent Builderを主対象にし、Google GeminiのGemにも対応する。本スキル全体をベータ版として扱う。
 - Agent Builder向けは端末からの埋め込みファイルを利用できるライセンスまたは従量課金環境だけを対象にする。
-- Gem早期アクセスはKnowledgeへのファイル追加を利用できるアカウント、プラン、管理者設定だけを対象にし、Agent Builderと同等の機能や動作保証を前提にしない。
+- GemはKnowledgeへのファイル追加を利用できるアカウント、プラン、管理者設定だけを対象にする。対象サービスごとに機能、上限、検証条件が異なるため、Agent BuilderとGemを同一仕様とはみなさない。
 - Copilot Studio 固有の機能を前提にしない。
 - 生成物を利用者が管理するAgent BuilderまたはGemへ人が配備する前提とする。
 - ファイルのアップロード、共有設定、外部Webや公開リポジトリへの公開を行わない。

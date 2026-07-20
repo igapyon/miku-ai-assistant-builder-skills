@@ -2,7 +2,7 @@
 
 ## 目的
 
-文書、メモ、ソースコード、下書き、旧版などが混在するフォルダから、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定したあと、人間が準備したMarkdownやOffice文書を追加し、主対象のMicrosoft 365 Copilot Agent Builderへ設定しやすい単一の配備用フォルダへ統合する。Google Gemini Gem向けは早期アクセスとして同じ流れを可能な範囲で再利用する。
+文書、メモ、ソースコード、下書き、旧版などが混在するフォルダから、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定したあと、人間が準備したMarkdownやOffice文書を追加し、主対象のMicrosoft 365 Copilot Agent BuilderまたはGoogle Gemini Gemへ設定しやすい単一の配備用フォルダへ統合する。対象サービスの仕様差に応じて同じ流れを使い分ける。
 
 これは専用インポート形式への変換ではない。Configure画面へコピーする入力値と、Knowledge sourcesとして登録する候補を人が確認できる受け渡し形式とする。
 
@@ -10,7 +10,7 @@
 
 ## 配備先と形式の選択
 
-新規変換では、主対象の`agent-builder`（Microsoft 365 Copilot Agent Builder）または早期アクセスの`gem`（Google Gemini Gem Classic）を利用者に確認する。それ以前の会話で明示されていない限り、主対象だからという理由でAgent Builderを既定値にしない。Agent Builderは端末からの埋め込みファイルを利用できる環境、GemはKnowledgeへのファイル追加を利用できる環境だけを対象にする。
+新規変換では、主対象の`agent-builder`（Microsoft 365 Copilot Agent Builder）または`gem`（Google Gemini Gem Classic）を利用者に確認する。それ以前の会話で明示されていない限り、主対象だからという理由でAgent Builderを既定値にしない。Agent Builderは端末からの埋め込みファイルを利用できる環境、GemはKnowledgeへのファイル追加を利用できる環境だけを対象にする。
 
 Gemでは、Knowledge用Markdownを`markdown`のまま使うか`docx`へ変換するかも確認する。Markdownの添付可否、DOCXとの回答品質差、ファイル上限は環境や製品更新に依存するため、推測で選ばない。選択を`work/preparation-status.md`へ記録し、再開時に変更しない。
 

@@ -4,11 +4,11 @@
 
 > **Beta:** 本スキル全体はベータ版です。対応サービスの仕様差や利用環境ごとの制約、フォルダ変換ワークフローを継続して検証・調整しているため、今後の更新で仕様や出力が変更される可能性があります。
 
-Copilot Studio 固有のエージェント構築ではなく、Microsoft 365 Copilot 内の軽量な Agent Builder を主対象とします。Google Gemini の Gem には早期アクセス機能として軽量対応します。
+Copilot Studio 固有のエージェント構築ではなく、Microsoft 365 Copilot 内の軽量な Agent Builder を主対象とします。Google Gemini の Gem にも対応します。
 
-生成する配備データは、人が対象サービスへ設定するためのものです。このスキルはファイルのアップロード、共有設定、外部Webや公開リポジトリへの公開を行いません。Agent Builderでは端末からのファイル添付を利用できるライセンスまたは従量課金環境が前提です。Gem早期アクセスではKnowledgeへのファイル追加を利用できるアカウントと管理者設定が前提です。
+生成する配備データは、人が対象サービスへ設定するためのものです。このスキルはファイルのアップロード、共有設定、外部Webや公開リポジトリへの公開を行いません。Agent Builderでは端末からのファイル添付を利用できるライセンスまたは従量課金環境が前提です。GemではKnowledgeへのファイル追加を利用できるアカウントと管理者設定が前提です。
 
-Gem早期アクセスは、Agent Builder向けワークフローの成果物をGemでもおおむね利用できるようにする付加機能です。Agent Builderと同等の機能、検証範囲、動作保証は提供しません。
+Agent BuilderとGemでは機能、上限、検証条件が異なります。各サービスの最新仕様と利用者の実画面を確認し、同一仕様を前提にしません。
 
 ## Knowledge利用上の注意
 
@@ -57,7 +57,7 @@ ZIP は Agent home 直下へ展開する形式で、内部のスキルは `skill
 
 新規変換の開始時には、それ以前の会話で明示されていない限り、配備先がMicrosoft 365 Copilot Agent BuilderかGoogle Gemini Gem Classicか、入力元となる正確なフォルダと自動処理対象範囲はどこかを人に確認します。確認できるまで、入力フォルダの棚卸しや対象ファイルの選定、出力フォルダの作成を開始しません。人が質問に対して「特に指定なし」「おまかせ」と明示した項目だけは、その回答後に初めて、作業目的に合う狭い範囲の想定で補完します。
 
-1. 主対象のAgent Builder、または早期アクセスのGemを選び、Gemの場合はMarkdownのまま使うかDOCX化するかを選ぶ。
+1. 主対象のAgent Builder、またはGemを選び、Gemの場合はMarkdownのまま使うかDOCX化するかを選ぶ。
 2. 対象フォルダを棚卸しし、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定して、`manual-input/`への追加資料の準備待ちで停止する。
 3. スキルを再度起動し、対象サービスで利用可能なファイル枠に収まるよう、`miku-text-bundle --mode knowledge-source`の自動バンドル数を調整する。
 4. 選択した形式で最終`upload/`を構成し、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を生成する。
@@ -79,8 +79,8 @@ Agent Builderでは人力資料を最大19件とし、自動生成Knowledge sour
 ## 対応先とMarkdownの扱い
 
 - Agent Builder: 自動生成Markdownと手動MarkdownをDOCX化し、`upload/`へ置きます。
-- Gem早期アクセスのMarkdown選択: 自動生成Markdownと手動MarkdownをMarkdownのまま`upload/`へ置きます。
-- Gem早期アクセスのDOCX選択: Agent Builderと同様に`miku-md2docx`でDOCX化します。
+- GemのMarkdown選択: 自動生成Markdownと手動MarkdownをMarkdownのまま`upload/`へ置きます。
+- GemのDOCX選択: Agent Builderと同様に`miku-md2docx`でDOCX化します。
 
 `work/knowledge-markdown/`は自動生成されたKnowledge資料の中間置き場です。`work/knowledge-index.md`と`work/preparation-status.md`は管理用であり、添付しません。`agent-builder-input.md`と`gem-input.md`は設定画面への転記用、`items-to-confirm.md`は人の確認用であり、いずれもKnowledgeファイルとして添付しません。
 
