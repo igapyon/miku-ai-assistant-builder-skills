@@ -35,7 +35,7 @@ CLI-backed型です。
 
 ## Build
 
-ローカルビルドには Node.js 24、Java 17以降、`zip` / `unzip` コマンドが必要です。
+ローカルビルドには Node.js 20以降、Java 17以降、`zip` / `unzip` コマンドが必要です。CIではNode.js 20と24の両方を検証し、Release成果物はNode.js 24で生成します。配布ZIPを利用するだけの場合、リポジトリのローカルビルドは不要です。Skill実行時の同梱CLIはNode.js版を優先し、Node.jsが利用できない場合はJava版へフォールバックします。
 
 ```bash
 npm test
