@@ -1,8 +1,8 @@
-# Google Gemini Gem早期アクセスの基本事項
+# Google Gemini Gemの基本事項
 
-この資料は、Google GeminiのGem向けに入力値とKnowledgeファイル候補を準備する早期アクセス機能の、最小限の確認事項をまとめる。
+この資料は、Google GeminiのGem向けに入力値とKnowledgeファイル候補を準備するための、最小限の確認事項をまとめる。
 
-Gem対応は、主対象であるMicrosoft 365 Copilot Agent Builder向けワークフローの成果物を、Gemでもおおむね利用できるようにする付加機能である。Agent Builderと同等の機能、検証範囲、動作保証は提供しない。
+本スキル全体はベータ版であり、Microsoft 365 Copilot Agent Builderを主対象としつつGemにも対応する。対象サービスごとに機能、上限、検証条件が異なるため、Agent BuilderとGemを同一仕様とはみなさない。
 
 ## 対象
 
