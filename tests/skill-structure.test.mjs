@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import test from "node:test";
+import { createRunDirectory, formatLocalRunId } from "../skills/igapyon-miku-ai-assistant-builder/scripts/create-run-directory.mjs";
 
 const ROOT = process.cwd();
 const skillName = "igapyon-miku-ai-assistant-builder";
@@ -25,6 +27,7 @@ test("generated index is required and current", () => {
     "references/platform/02-limitations.md",
     "references/platform/03-gemini-gems.md",
     "references/workflows/01-folder-conversion.md",
+    "scripts/create-run-directory.mjs",
     "runtime/miku-md2docx-1.0.1.mjs",
     "runtime/miku-md2docx-java-1.0.1.jar",
     "runtime/miku-text-bundle-1.6.0.mjs",
@@ -79,6 +82,42 @@ test("skill frontmatter and canonical location match the installable name", () =
   assert.equal(fs.existsSync(path.resolve(ROOT, "SKILL.md")), false);
 });
 
+test("supported Node.js baseline starts at 22 and CI covers 22 and 24", () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.resolve(ROOT, "package.json"), "utf8"));
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const ci = fs.readFileSync(path.resolve(ROOT, ".github/workflows/ci.yml"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const folderWorkflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+
+  assert.equal(packageJson.engines.node, ">=22");
+  assert.match(ci, /node-version: \[22, 24\]/);
+  assert.match(readme, /スキルの実行には、Node\.js 22以降が必須/);
+  assert.match(readme, /Java版を明示的に選択する場合も、スキル全体の実行にはNode\.js 22以降が必要/);
+  assert.match(skillMd, /本スキルの実行にはNode\.js 22以降を必要とする/);
+  assert.match(folderWorkflow, /このワークフローの実行にはNode\.js 22以降が必須/);
+  assert.doesNotMatch(readme, /Node\.js 20/);
+});
+
+test("GitHub Actions pin dependencies and fully verify release artifacts", () => {
+  const ci = fs.readFileSync(path.resolve(ROOT, ".github/workflows/ci.yml"), "utf8");
+  const release = fs.readFileSync(path.resolve(ROOT, ".github/workflows/release-build.yml"), "utf8");
+
+  for (const workflow of [ci, release]) {
+    assert.doesNotMatch(workflow, /uses: [^\n]+@v\d+/);
+    for (const line of workflow.split("\n").filter((entry) => entry.trimStart().startsWith("uses:"))) {
+      assert.match(line, /@[0-9a-f]{40}(?:\s+#\s+v\d[^\n]*)?$/);
+    }
+  }
+  assert.match(ci, /fail-fast: false/);
+  assert.doesNotMatch(ci, /- run: npm test/);
+  assert.match(release, /if: startsWith\(github\.event\.inputs\.tag_name \|\| github\.ref_name, 'v'\)/);
+  assert.match(release, /git show-ref --verify --quiet "refs\/tags\/\$\{TAG_NAME\}"/);
+  assert.match(release, /npm run build && npm run verify:reproducible/);
+});
+
 test("deployment workflow produces flat validated uploads with traceable source paths", () => {
   const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
   const docxReference = fs.readFileSync(
@@ -86,7 +125,7 @@ test("deployment workflow produces flat validated uploads with traceable source 
     "utf8"
   );
   assert.match(skillMd, /miku-md2docx/);
-  assert.match(skillMd, /バックエンド指定がなければNode\.js版を使用する/);
+  assert.match(skillMd, /変換バックエンドの指定がなければNode\.js版を使用/);
   assert.match(skillMd, /選択形式の自動生成資料、手動Markdown、検証済みの準備済み資料/);
   assert.match(skillMd, /リポジトリルート基準の相対パス/);
   assert.match(docxReference, /DOCX間の相対リンクが解決されることを前提にしない/);
@@ -133,6 +172,62 @@ test("conversion outputs use timestamped run directories without changing them o
   assert.match(skillMd, /第2段階では新しい日時ディレクトリを作らず/);
   assert.match(workflow, /既存の`work\/preparation-status\.md`が属する実行ディレクトリを再利用/);
   assert.match(workflow, /`temp1\/`など別の基準ディレクトリ/);
+});
+
+test("run directories use the OS local clock and atomically avoid minute collisions", (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "miku-ai-assistant-builder-run-"));
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+  const localTime = new Date(2026, 6, 21, 16, 21, 37);
+
+  assert.equal(formatLocalRunId(localTime), "20260721-1621");
+  const first = createRunDirectory({ baseDirectory: temporaryRoot, now: localTime });
+  const second = createRunDirectory({ baseDirectory: temporaryRoot, now: localTime });
+
+  assert.equal(first.runId, "20260721-1621");
+  assert.equal(second.runId, "20260721-1621-02");
+  assert.equal(fs.statSync(first.outputDirectory).isDirectory(), true);
+  assert.equal(fs.statSync(second.outputDirectory).isDirectory(), true);
+  assert.match(first.createdAt, /^20260721T16:21:37[+-]\d{2}:\d{2}$/);
+  assert.equal(typeof first.timeZone, "string");
+});
+
+test("folder conversion delegates timestamp creation to the bundled script", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+
+  assert.match(skillMd, /scripts\/create-run-directory\.mjs/);
+  assert.match(skillMd, /会話中の時刻、モデルの推測、手入力した時分から実行IDを作らない/);
+  assert.match(workflow, /node <skill-directory>\/scripts\/create-run-directory\.mjs --base-directory/);
+  assert.match(workflow, /スクリプトのJSON出力にある`runId`、`outputDirectory`、`createdAt`、`timeZone`をそのまま採用/);
+  assert.match(workflow, /スクリプトが失敗した場合.*代替生成せず.*停止/);
+  assert.match(readme, /OSのローカル時計から生成/);
+});
+
+test("repeat conversion records prior choices but creates a fresh run directory", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+
+  for (const content of [readme, skillMd, workflow]) {
+    assert.match(content, /work\/execution-record\.md/);
+    assert.match(content, /新しい日時付き実行ディレクトリ/);
+  }
+  assert.match(skillMd, /前回値を現在の指定とみなさず/);
+  assert.match(skillMd, /過去の`manual-input\/`、`upload\/`、`work\/`を自動コピーまたは再利用しない/);
+  assert.match(workflow, /## 前回条件を参照する反復実行/);
+  assert.match(workflow, /前回記録は入力候補であり、現在の実行指示ではない/);
+  assert.match(workflow, /現在の入力ファイル.*対象サービスの利用可否と上限.*再計算/s);
+  assert.match(workflow, /## execution-record\.md/);
+  assert.match(workflow, /Previous execution record/);
+  assert.match(workflow, /Do not reuse this run directory/);
+  assert.match(readme, /前回の作業フォルダや`manual-input\/`、`upload\/`は再利用・自動コピーしません/);
 });
 
 test("Gem handoff mirrors the shared Agent Builder input core", () => {

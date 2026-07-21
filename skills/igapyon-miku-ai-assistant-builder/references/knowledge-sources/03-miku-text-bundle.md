@@ -8,7 +8,7 @@
 
 ## 必須条件
 
-- Node.js版v1.6.0を優先し、Node.jsが利用できない場合はJava版v1.6.0を使用する。
+- Node.js版v1.6.0を既定とし、利用者がJavaバックエンドを明示した場合はJava版v1.6.0を使用する。本スキル全体にはNode.js 22以降が必要である。
 - 実行前にランタイムの`--help`または`--version`を確認する。
 - `--mode knowledge-source`が利用できるv1.5.0以降を使用する。
 - 同梱ランタイムが未対応なら、handoffモードで代用せず更新が必要と報告する。
@@ -31,7 +31,7 @@ node <skill-root>/runtime/miku-text-bundle-1.6.0.mjs \
   --dry-run
 ```
 
-Node.jsが利用できない場合は、Java版を同じオプションで実行する。
+Javaバックエンドが明示された場合は、Java版を同じオプションで実行する。
 
 ```text
 java -jar <skill-root>/runtime/miku-text-bundle-java-1.6.0.jar \

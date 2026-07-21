@@ -8,7 +8,7 @@ Markdownは中間成果物、DOCXは最終登録候補とする。Markdown-to-Of
 
 ## ランタイム
 
-バックエンド指定がなければ、単一ファイルへ依存をバンドルしたNode.js CLI版`miku-md2docx-1.0.1.mjs`を優先する。Node.jsが利用できない場合はJava版`miku-md2docx-java-1.0.1.jar`を使用する。どちらも外部依存のダウンロードやネットワーク接続を要求しない。
+バックエンド指定がなければ、単一ファイルへ依存をバンドルしたNode.js CLI版`miku-md2docx-1.0.1.mjs`を使用する。利用者がJavaバックエンドを明示した場合はJava版`miku-md2docx-java-1.0.1.jar`を使用する。本スキル全体にはNode.js 22以降が必要であり、どちらの変換バックエンドも外部依存のダウンロードやネットワーク接続を要求しない。
 
 実行前に`--help`と`--version`でCLI契約を確認する。通常変換では入力Markdownと主出力`--out`だけを指定し、summaryなどの追加成果物を勝手に生成しない。
 

@@ -8,6 +8,10 @@
 
 生成物は利用者が管理するAgent BuilderまたはGemへ人が配備する。このワークフローはローカルの配備用フォルダを完成させるところで終了し、ファイルのアップロード、共有設定、外部公開は行わない。
 
+## 実行環境
+
+このワークフローの実行にはNode.js 22以降が必須である。日時付き実行ディレクトリの作成と既定の変換バックエンドでNode.jsを使用する。変換バックエンドとしてJava版を明示的に選択した場合もNode.jsの要件はなくならず、Java 17以降も追加で必要になる。
+
 ## 配備先と形式の選択
 
 新規変換では、主対象の`agent-builder`（Microsoft 365 Copilot Agent Builder）または`gem`（Google Gemini Gem Classic）を利用者に確認する。それ以前の会話で明示されていない限り、主対象だからという理由でAgent Builderを既定値にしない。Agent Builderは端末からの埋め込みファイルを利用できる環境、GemはKnowledgeへのファイル追加を利用できる環境だけを対象にする。
@@ -29,6 +33,22 @@ Gemでは、Knowledge用Markdownを`markdown`のまま使うか`docx`へ変換�
 
 それ以前の会話で項目が明示済みなら再質問せず、採用する値を短く復唱する。曖昧な指示、複数候補、以前の会話との矛盾がある場合は明示済みとみなさない。
 
+## 前回条件を参照する反復実行
+
+利用者が前回と同じ条件または過去実行を参考にした再実行を求めた場合は、指定された過去の実行ディレクトリにある`work/execution-record.md`を読む。指定がない場合は候補を推測して開かず、前回実行ディレクトリまたは記録ファイルを確認する。
+
+前回記録は入力候補であり、現在の実行指示ではない。次を短く復唱し、変更の有無または同条件であることを利用者に確認してから入力を棚卸しする。
+
+- 配備先とGemのKnowledge形式
+- 入力元、自動処理範囲、明示的除外
+- エージェントの目的、対象利用者、代表的な質問、正式資料
+- 出力基準ディレクトリ
+- 前回の手動追加資料名と確認事項
+
+利用者が同条件と確認しても、現在の入力ファイル、秘密情報、対象サービスの利用可否と上限、同梱ランタイム、ファイル数、文字数、`maxChars`、最終basename、検証結果は再計算する。前回の自動入力一覧、製品上限、計算値、生成物を現在も有効だとみなさない。
+
+反復実行は同一実行の第2段階再開ではない。前回の実行ディレクトリを変更せず、新しい日時付き実行ディレクトリを作って第1段階から開始する。前回の`manual-input/`、`upload/`、`work/`を自動コピーせず、新しい空の`manual-input/`を作る。新しい`work/preparation-status.md`と`work/execution-record.md`には参照元の記録パスを残す。
+
 ## 状態遷移
 
 このワークフローは次の二段階を別のターンで実行する。
@@ -45,6 +65,7 @@ new
 - 利用者が追加資料の準備完了または追加資料なしを明示した後だけ、`finalizing`へ進む。
 - 再開時は`work/preparation-status.md`を正本として状態と入出力を復元する。
 - 状態ファイルがない、不整合、または`finalized`なら、再開可能と推測せず停止する。
+- 反復実行は過去の`work/execution-record.md`を参考にする新規変換であり、この状態遷移とは別の新しい`new`から始める。
 
 ## 出力ディレクトリ
 
@@ -54,10 +75,19 @@ new
 workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/
 ```
 
-- `YYYYMMDD-HHmm`は新規変換を開始したローカル日時とする。
-- 同じ分の実行ディレクトリが既にある場合は上書きせず、`YYYYMMDD-HHmm-02`、`YYYYMMDD-HHmm-03`のように連番を付ける。
+- 開始確認が完了し、基準ディレクトリが確定した後、実行ディレクトリを作る直前に同梱スクリプトを実行する。
+
+```sh
+node <skill-directory>/scripts/create-run-directory.mjs --base-directory <output-base-directory>
+```
+
+- スクリプトのJSON出力にある`runId`、`outputDirectory`、`createdAt`、`timeZone`をそのまま採用し、`work/preparation-status.md`と`work/execution-record.md`へ記録する。
+- `YYYYMMDD-HHmm`はスクリプト実行時のOSローカル時計から生成する。会話の日時、セッション開始時刻、モデルが推測した時分、手入力の時分、UTCへ暗黙変換した値を使わない。
+- 同じ分の実行ディレクトリが既にある場合、スクリプトが`YYYYMMDD-HHmm-02`、`YYYYMMDD-HHmm-03`のように未使用の連番ディレクトリを作る。呼び出し側で存在確認と作成を分離しない。
+- スクリプトが失敗した場合は実行IDやディレクトリを代替生成せず、エラーを報告して停止する。
 - 利用者が`temp1/`など別の基準ディレクトリを指定した場合も、その下に`miku-ai-assistant-builder/<実行ID>/`を作る。
 - 第1段階で実行ディレクトリを一度だけ作る。第2段階では新しい実行IDを発行せず、利用者が指定した既存の`work/preparation-status.md`が属する実行ディレクトリを再利用する。
+- 反復実行では過去の実行IDを再利用せず、現在のローカル日時から新しい実行IDを発行する。
 - 作成した実行ディレクトリは自動処理入力から明示的に除外する。`workplace/`を既定にする場合も、ランタイムの暗黙除外だけに依存せず状態ファイルへ除外を記録する。
 
 ## 安全原則
@@ -79,7 +109,7 @@ workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/
 4. `.env`と`.env.*`、秘密情報、出力先、利用者が明示した除外、ランタイムが技術的に扱えないファイルだけを`Exclude`または`Confirm`へ分類し、理由を記録する。
 5. DOCX、PPTX、XLSX、PDF、画像などの非テキスト資料を自動変換せず、自動処理対象に含めない。必要なら、人が準備して`manual-input/`へ置く`Manual candidate`として記録する。この段階では分割数を確定せず、`miku-text-bundle`を実行しない。
 6. 空の`manual-input/`を作る。既存の`manual-input/`がある場合は内容を削除せず、新規変換として続行しない。
-7. `work/preparation-status.md`を作り、状態を`awaiting-manual-input`にする。
+7. `work/preparation-status.md`と`work/execution-record.md`を作り、状態を`awaiting-manual-input`にする。反復実行の場合は、両方に参照した前回記録のパスを記載する。
 8. 利用者へ`manual-input/`の解決済みフルパスと出力先基準の相対パス、追加可能な形式、対象サービスで確認したファイル上限、原本を変更しない規則、再開方法を伝える。Agent Builderでは人力資料は最大19件とする。
 9. 追加資料がない場合も利用者の明示的な確認を待ち、ここで停止する。
 
@@ -108,6 +138,7 @@ workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/
 - Output base directory: [workplace、temp1、または利用者指定の基準ディレクトリ]
 - Run ID: [YYYYMMDD-HHmmまたは衝突回避連番付きID]
 - Created at: [日時とタイムゾーン]
+- Time zone: [同梱スクリプトが返したtimeZone]
 - Text bundle runtime: [版とバックエンド]
 - Text bundle mode: knowledge-source
 - Filename prefix: [prefix]
@@ -132,6 +163,54 @@ Place optional source files in manual-input/, then invoke this skill again with 
 ```
 
 状態ファイルには秘密情報を記録しない。入力元と出力先の絶対パスは再開に必要なローカル管理情報として状態ファイルにだけ記録できるが、Knowledgeファイル本文、`agent-builder-input.md`、`gem-input.md`へ複製しない。
+
+## execution-record.md
+
+次回の反復実行で前回条件と実績を参照できるよう、第1段階で`work/execution-record.md`を作り、第2段階の完了時に更新する。少なくとも次をMarkdownで記録する。
+
+```markdown
+# AI Assistant Builder Execution Record
+
+- State: awaiting-manual-input または finalized
+- Target platform: [agent-builder または gem]
+- Gem knowledge format: [markdown、docx、またはN/A]
+- Source directory: [入力元]
+- Automatic input scope: [対象範囲]
+- Explicit exclusions: [除外、またはNone]
+- Output base directory: [基準ディレクトリ]
+- Output directory: [今回の新規日時付き出力先]
+- Run ID: [今回の実行ID]
+- Created at: [同梱スクリプトが返したcreatedAt]
+- Time zone: [同梱スクリプトが返したtimeZone]
+- Previous execution record: [参照元パス、またはNone]
+- Purpose: [目的]
+- Intended users: [対象利用者]
+- Representative questions: [代表的な質問]
+- Official sources: [正式資料]
+- Text bundle runtime: [版とバックエンド]
+- Text bundle mode: knowledge-source
+- Filename prefix: [prefix]
+- Encoding: [文字コード]
+- Max input file bytes: [値]
+
+## Requested and selected inputs
+
+- [自動入力、手動追加資料、除外、確認待ち]
+
+## Execution results
+
+- [M、A、N、T、C、maxChars、生成数、最終basename。第1段階ではPending]
+
+## Validation
+
+- [検証結果と警告。第1段階ではPending]
+
+## Repeat
+
+Invoke this skill with this execution record as a reference. Confirm or change the recorded choices, then create a new timestamped run directory. Do not reuse this run directory.
+```
+
+入力元や出力先の絶対パスはこのローカル管理用記録に残してよい。秘密情報は記録せず、Knowledgeファイル、入力用Markdown、最終`upload/`へ含めない。前回の手動追加資料は名前と判断結果だけを記録し、原本を次回の`manual-input/`へ自動コピーしない。
 
 ## 手動追加資料の配置案内
 
@@ -186,7 +265,7 @@ Place optional source files in manual-input/, then invoke this skill again with 
 17. すべての検証に成功した場合だけ、最終`upload/`を登録候補のフラット構成へ置き換える。
 18. `upload/`の実在ファイルからKnowledge一覧を作り、Agent Builderでは`agent-builder-input.md`、GemではName、Description、Custom instructions、Knowledge、Items to confirmを持つ`gem-input.md`へbasenameだけを記載する。
 19. `upload/`の未参照ファイルと入力用Markdownの参照切れがないことを双方向に確認する。
-20. `items-to-confirm.md`を確定し、状態を`finalized`へ更新する。
+20. `items-to-confirm.md`を確定し、`preparation-status.md`と`execution-record.md`へ実行パラメータ、入力と出力の実績、検証結果を記録して状態を`finalized`へ更新する。
 21. 利用者へ`upload/`の登録候補、手動資料数、自動生成数、合計数と確認事項を示す。
 
 ## 分類
@@ -210,6 +289,7 @@ Place optional source files in manual-input/, then invoke this skill again with 
 - 第1段階が`awaiting-manual-input`で停止し、同じターンで第2段階へ進んでいない。
 - 第1段階では自動処理対象だけが確定し、`miku-text-bundle`がまだ実行されていない。
 - `preparation-status.md`から別セッションで再開できる。
+- `execution-record.md`に今回の指定内容と実績が残り、次回はそれを参考に新しい日時付き実行ディレクトリで開始できる。
 - `manual-input/`の原本が変更されていない。
 - `agent-builder-input.md`または`gem-input.md`が対象サービスの入力項目順になっている。
 - `gem-input.md`にName、Description、Custom instructions、Knowledge、Items to confirmがこの順で存在する。
