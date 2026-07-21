@@ -17,14 +17,17 @@ permissions:
 jobs:
   build-and-upload:
     runs-on: ubuntu-latest
+    if: startsWith(github.event.inputs.tag_name || github.ref_name, 'v')
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           ref: ${{ github.event.inputs.tag_name || github.ref }}
-      - uses: actions/setup-node@v6
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 24
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
           java-version: 17
@@ -34,13 +37,23 @@ jobs:
           TAG_NAME: ${{ github.event.inputs.tag_name || github.ref_name }}
         run: |
           set -euo pipefail
+          git show-ref --verify --quiet "refs/tags/${TAG_NAME}" || {
+            echo "Release ref must be an existing Git tag: ${TAG_NAME}" >&2
+            exit 1
+          }
+          tag_commit="$(git rev-list -n 1 "${TAG_NAME}")"
+          head_commit="$(git rev-parse HEAD)"
+          test "${head_commit}" = "${tag_commit}" || {
+            echo "Checked-out commit does not match release tag: ${TAG_NAME}" >&2
+            exit 1
+          }
           version="${TAG_NAME#v}"
           package_version="$(node -p "require('./package.json').version")"
           test "${version}" = "${package_version}"
       - name: Build and verify exact release artifact
-        run: npm run build
+        run: npm run build && npm run verify:reproducible
       - name: Upload verified draft release assets
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: ${{ github.event.inputs.tag_name || github.ref_name }}
           files: |

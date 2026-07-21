@@ -1,10 +1,10 @@
 {
   "name": "miku-ai-assistant-builder-skills",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "mikuIndex": {
     "path": "skills/igapyon-miku-ai-assistant-builder/index.json",

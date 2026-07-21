@@ -10,6 +10,12 @@ Copilot Studio 固有のエージェント構築ではなく、Microsoft 365 Cop
 
 Agent BuilderとGemでは機能、上限、検証条件が異なります。各サービスの最新仕様と利用者の実画面を確認し、同一仕様を前提にしません。
 
+## 実行要件
+
+`igapyon-miku-ai-assistant-builder`スキルの実行には、Node.js 22以降が必須です。これはリポジトリのビルド時だけの要件ではありません。日時付き実行ディレクトリの作成と既定の変換バックエンドでNode.jsを使用するため、スキルを利用する環境にもNode.js 22以降が必要です。
+
+同梱CLIの変換バックエンドとしてJava版を明示的に選択する場合も、スキル全体の実行にはNode.js 22以降が必要です。Java版バックエンドには、これに加えてJava 17以降が必要です。
+
 ## Knowledge利用上の注意
 
 本スキルが`miku-text-bundle`対応テキストを原則すべて自動処理対象にすることは、配備用Knowledgeファイルを準備する際の入力範囲を示します。配備後のAIアシスタントが、登録済みKnowledge内の全情報を常に検索・取得・参照できることや、回答へ必ず利用することを保証するものではありません。
@@ -35,7 +41,7 @@ CLI-backed型です。
 
 ## Build
 
-ローカルビルドには Node.js 20以降、Java 17以降、`zip` / `unzip` コマンドが必要です。CIではNode.js 20と24の両方を検証し、Release成果物はNode.js 24で生成します。配布ZIPを利用するだけの場合、リポジトリのローカルビルドは不要です。Skill実行時の同梱CLIはNode.js版を優先し、Node.jsが利用できない場合はJava版へフォールバックします。
+ローカルビルドには、上記のNode.js 22以降に加えてJava 17以降と`zip` / `unzip`コマンドが必要です。CIではNode.js 22と24の両方を検証し、Release成果物はNode.js 24で生成します。
 
 ```bash
 npm test
@@ -70,7 +76,11 @@ workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/
 
 同じ分に既存ディレクトリがある場合は`-02`、`-03`を付け、上書きしません。第2段階では新しい日時ディレクトリを作らず、第1段階の`work/preparation-status.md`がある同じディレクトリを再利用します。利用者が`temp1/`など別の基準ディレクトリを指定した場合も、その下に同じ`miku-ai-assistant-builder/<実行ID>/`構造を作ります。
 
-`work/preparation-status.md`が別セッションからの再開状態を保持します。`manual-input/`の人間管理原本は変更しません。
+日時付き実行IDは、ディレクトリ作成直前に同梱`create-run-directory.mjs`がOSのローカル時計から生成します。AIが会話中の時刻を推測したりUTCへ暗黙変換したりせず、スクリプトが返した`runId`と作成済みディレクトリをそのまま使います。
+
+`work/preparation-status.md`が同じ実行の第2段階を別セッションから再開する状態を保持します。`work/execution-record.md`には今回の指定内容、実行条件、入力と出力の実績、検証結果を残します。
+
+前回と同じ条件で新たに作り直す場合は、前回の`work/execution-record.md`を参考にします。前回値を復唱して人が確認した後、入力内容と製品上限を再検証し、新しい日時付き実行ディレクトリを作って第1段階から始めます。前回の作業フォルダや`manual-input/`、`upload/`は再利用・自動コピーしません。
 
 手動追加資料の準備を依頼するときは、作成済み`manual-input/`の解決済みフルパスと出力先基準の相対パスを利用者へ示します。フルパスは人向けのローカル作業案内だけに使い、Knowledgeファイルには含めません。
 
