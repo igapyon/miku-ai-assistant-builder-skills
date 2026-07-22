@@ -1,6 +1,6 @@
 ---
 name: igapyon-miku-ai-assistant-builder
-description: ベータ版。Microsoft 365 Copilot内の軽量なAgent BuilderまたはGoogle GeminiのGemに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Gemにも対応する。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階ではAgent Builder向けMarkdownをDOCX化し、GemではMarkdownのまま使うか同梱`miku-md2docx`でDOCX化するかを利用者が選ぶ。前回の実行記録を参照した反復実行では新しい作業フォルダを作る。ファイル添付を利用できるライセンス、アカウント、管理者設定が前提。`igapyon-miku-ai-assistant-builder`または`miku-ai-assistant-builder`が明示されたとき、このスキルを使ったフォルダ変換、その再開、または前回条件を参照した再実行が依頼されたときに使用する。Copilot Studio固有のエージェント作成には使用しない。
+description: ベータ版。Microsoft 365 Copilot内の軽量なAgent BuilderまたはGoogle GeminiのGemに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Gemにも対応する。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階では確定条件から再実行可能なNode.js変換ジョブを作り、Agent Builder向けMarkdownをDOCX化し、GemではMarkdownのまま使うか同梱`miku-md2docx`でDOCX化するかを利用者が選ぶ。構成固定の内容更新は同じジョブを再実行し、前回条件を再検討する反復実行では新しい作業フォルダを作る。ファイル添付を利用できるライセンス、アカウント、管理者設定が前提。`igapyon-miku-ai-assistant-builder`または`miku-ai-assistant-builder`が明示されたとき、このスキルを使ったフォルダ変換、その再開、確定済み構成の内容更新、または前回条件を参照した再実行が依頼されたときに使用する。Copilot Studio固有のエージェント作成には使用しない。
 ---
 
 # Igapyon Miku AI Assistant Builder
@@ -56,6 +56,7 @@ Agent Builder向けは、端末からの埋め込みファイルを利用でき�
 - 入力欄と推奨形式を作るときは、[入力項目と推奨形式](references/instructions/01-input-fields.md)を読む。
 - Knowledge sourcesを設計するときは、[基本原則](references/knowledge-sources/01-principles.md)と[コンテンツ設計](references/knowledge-sources/02-content-design.md)を読む。
 - 既存フォルダを変換するとき、または準備済みの変換を再開するときは、[雑多なフォルダの二段階変換](references/workflows/01-folder-conversion.md)を読む。
+- 第2段階で再実行可能な変換ジョブを作るとき、または構成を固定したまま内容だけを更新するときは、[確定済み構成の再実行可能な変換ジョブ](references/workflows/02-repeatable-conversion-job.md)を読む。
 - Knowledge sourcesを生成するときは、[miku-text-bundle連携](references/knowledge-sources/03-miku-text-bundle.md)を読み、同梱`miku-text-bundle`を使用する。
 - 手動資料数から自動生成枠と`--max-chars`を決めるときは、[Agent Builderのファイル枠配分](references/knowledge-sources/06-upload-file-budget.md)を読む。
 - 登録用DOCXを生成するときは、[miku-md2docx連携](references/knowledge-sources/05-miku-md2docx.md)を読み、同梱`miku-md2docx`を使用する。
@@ -66,9 +67,11 @@ Agent Builder向けは、端末からの埋め込みファイルを利用でき�
 
 ## Workflow
 
-新規変換、同一実行の再開、過去実行を参考にする反復実行を混同しない。新規変換では開始確認ゲートを最初に通し、対象を`agent-builder`または`gem`から確認する。Gemの場合はKnowledge用Markdownを`markdown`のまま使うか`docx`へ変換するかも確認し、推測で選ばない。選択結果は`work/preparation-status.md`へ記録する。状態が`awaiting-manual-input`なら記録済みの選択で第2段階として同じ実行ディレクトリを再開する。
+新規変換、同一実行の再開、確定済み変換ジョブによる内容更新、過去実行を参考にする反復実行を混同しない。新規変換では開始確認ゲートを最初に通し、対象を`agent-builder`または`gem`から確認する。Gemの場合はKnowledge用Markdownを`markdown`のまま使うか`docx`へ変換するかも確認し、推測で選ばない。選択結果は`work/preparation-status.md`へ記録する。状態が`awaiting-manual-input`なら記録済みの選択で第2段階として同じ実行ディレクトリを再開する。
 
 利用者が前回と同じ条件での再実行を求めた場合は、指定された過去の`work/execution-record.md`を読む。前回値を現在の指定とみなさず、配備先、入力元、自動処理範囲、除外、目的、対象利用者、代表的な質問、出力基準を候補として復唱し、利用者の確認後に現在の入力と製品上限を再検証する。反復実行は必ず新規変換として新しい日時付き実行ディレクトリを作り、過去の`manual-input/`、`upload/`、`work/`を自動コピーまたは再利用しない。新規変換と反復実行では次の第1段階だけを実行し、同じターンで第2段階へ進まない。
+
+利用者がファイル構成、個数、basename、形式を変えず、確定済み原本と手動資料の内容だけを更新すると明示した場合は、同じ実行ディレクトリの`work/conversion-plan.json`と`work/run-conversion.mjs`を確認する。構成が計画と一致する場合だけランナーを再実行し、新しい実行ディレクトリを作らない。構成差がある場合は計画を手編集して迂回せず、新規変換を案内する。
 
 ### 第1段階: 自動テキスト入力の確定と準備待ち
 
@@ -85,9 +88,9 @@ Agent Builder向けは、端末からの埋め込みファイルを利用でき�
 1. 利用者が指定した出力先の`work/preparation-status.md`を読み、状態が`awaiting-manual-input`であること、対象サービス、Gemの出力形式、自動処理対象、実行条件が現在の入力に一致することを確認する。状態ファイルがない、完了済み、または内容が不整合なら新規変換として推測せず停止する。
 2. `manual-input/`を読み取り専用として棚卸しする。対象サービスでの対応形式、サイズ、読取可否、機密性、パスワード保護、同名衝突を確認し、未確認事項は`items-to-confirm.md`へ記録する。Markdownは選択形式にかかわらず1件として数える。
 3. Agent Builderでは[Agent Builderのファイル枠配分](references/knowledge-sources/06-upload-file-budget.md)に従い、自動生成枠`A = 20 - M`、適格な自動入力ファイル数`N`、目標自動出力数`T = min(N, A)`、合計文字数`C`、`maxChars = max(120000, ceil(C / T))`を求める。GemではAgent Builderの20件を流用せず、実画面で確認した上限から自動生成枠を求める。上限を確認できない場合は停止する。
-4. 同梱`miku-text-bundle`ランタイムが`--mode knowledge-source`をサポートすることを確認する。計算した`--max-chars`でdry-runし、推定Knowledgeファイル数が`A`を超える間は値を増やして再実行する。条件を満たしてから本実行し、番号付きMarkdownを`work/knowledge-markdown/`へ、管理用indexを`work/knowledge-index.md`へ置く。
-5. Agent BuilderまたはGemの`docx`選択では、`work/knowledge-markdown/`の番号付きMarkdownと`manual-input/`のMarkdownを一対一で`miku-md2docx`へ渡す。Gemの`markdown`選択では`miku-md2docx`を実行せず、Markdownをそのまま一時的な出力場所へコピーする。原本Markdownは変更しない。
-6. 対象サービスが受け付けることを確認した準備済み資料を、basenameを維持して一時的な出力場所へコピーする。未対応または未確認の形式はコピーしない。全候補の検証に成功した場合だけ、フラットな`upload/`を最終候補で置き換える。
+4. 同梱`miku-text-bundle`ランタイムが`--mode knowledge-source`をサポートすることを確認する。計算した`--max-chars`でdry-runし、推定Knowledgeファイル数が`A`を超える間は値を増やす。条件、入力パス集合、手動資料、固定出力basenameを[確定済み構成の再実行可能な変換ジョブ](references/workflows/02-repeatable-conversion-job.md)に従って`work/conversion-plan.json`へ保存し、同梱ヘルパーで`work/run-conversion.mjs`を生成する。
+5. CLIを個別に本実行せず、生成した`work/run-conversion.mjs`を実行する。ランナーは`miku-text-bundle`のdry-runと本実行を行い、Agent BuilderまたはGemの`docx`選択では`work/knowledge-markdown/`と`manual-input/`のMarkdownを一対一で`miku-md2docx`へ渡す。Gemの`markdown`選択では`miku-md2docx`を実行せずMarkdownをコピーする。さらに準備済み資料のコピー、構成検証、成功後の`upload/`一括更新を行う。初回と将来の内容更新で同じランナーを使う。
+6. ランナーが出力した`work/knowledge-markdown/`、`work/knowledge-index.md`、`upload/`、`work/conversion-history.jsonl`を確認する。未対応または未確認の形式は計画へ含めず、ランナー失敗時は既存の正常な`upload/`を維持して停止する。
 7. 自動生成物と手動追加物の出力basenameが衝突する場合は、自動改名や上書きをせず、`upload/`を変更する前に停止する。
 8. 元リポジトリ基準の相対パスとファイル境界が自動生成MarkdownまたはDOCX本文に残ることを確認する。Knowledgeファイル間の相対リンクには依存せず、外部参照には確認済みの絶対URLを使う。
 9. InstructionsとKnowledge sourcesを分離する。振る舞い、処理順、口調、禁止事項、出力形式はInstructionsへ置き、回答根拠となる事実だけをKnowledge sourcesへ置く。
@@ -121,6 +124,9 @@ workplace/
         │   │   ├── knowledge-001.md
         │   │   └── knowledge-002.md
         │   ├── knowledge-index.md
+        │   ├── conversion-plan.json
+        │   ├── run-conversion.mjs
+        │   ├── conversion-history.jsonl
         │   ├── preparation-status.md
         │   └── execution-record.md
         ├── agent-builder-input.md または gem-input.md
@@ -138,6 +144,9 @@ workplace/
 - `work/knowledge-index.md`: 実行設定、元ファイル対応、スキップ、警告、marker、旧生成物候補を記録する。DOCX化・登録ともに行わない。
 - `work/preparation-status.md`: `awaiting-manual-input`または`finalized`の状態と、別セッションで再開するための情報を記録する。登録しない。
 - `work/execution-record.md`: 今回の指定内容、実行条件、実績、検証結果を記録し、次回の反復実行で参照する。登録しない。
+- `work/conversion-plan.json`: 第2段階で確定した入力パス集合、個数、形式、basename、CLI引数を記録する機械可読な変換契約。登録しない。
+- `work/run-conversion.mjs`: 第2段階の初回変換と、構成固定の内容更新に使うNode.jsランナー。登録しない。
+- `work/conversion-history.jsonl`: ランナーの成功履歴。登録しない。
 - `agent-builder-input.md`: Agent BuilderのConfigure画面への転記用。Knowledge sourceへ登録しない。
 - `gem-input.md`: Gem画面への転記用。Name、Description、Custom instructions、Knowledge、Items to confirmを含める。Knowledgeへ登録しない。
 - `items-to-confirm.md`: 版の衝突、正確性、機密性、権限、未対応形式など、人の判断が必要な事項を記載する。
@@ -163,6 +172,8 @@ workplace/
 - Agent Builderでは人力資料を最大19件とし、自動生成Knowledge sourceを最低1件確保する。
 - Agent Builderでは最終`upload/`の登録候補を20件以内にする。Gemでは実画面で確認した上限を使う。
 - `preparation-status.md`が再開可能な状態であることを確認せず第2段階を実行しない。
+- 第2段階の初回変換では、確定条件から`work/conversion-plan.json`と`work/run-conversion.mjs`を作り、CLIを個別に本実行せず同じランナーを実行する。
+- 状態が`finalized`の実行ディレクトリは、構成固定の内容更新として`work/run-conversion.mjs`を再実行できる。ランナーが構成差を報告した場合は計画を手編集して続行しない。
 - `miku-text-bundle`のhandoffモード出力をKnowledge sourcesへ登録しない。
 - 管理用の`<prefix>-index.md`をKnowledge sourcesへ登録しない。
 - Agent BuilderとGemのDOCX選択では中間Markdownを最終登録物として扱わない。GemのMarkdown選択では検証後のコピーだけを最終登録候補にする。
