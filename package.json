@@ -1,6 +1,6 @@
 {
   "name": "miku-ai-assistant-builder-skills",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,7 +12,7 @@
   },
   "scripts": {
     "check:index": "node scripts/verify-miku-index.mjs",
-    "test": "npm run check:index && node --test tests/skill-structure.test.mjs tests/conversion-job.test.mjs",
+    "test": "npm run check:index && node --test tests/skill-structure.test.mjs tests/conversion-job.test.mjs tests/md2xlsx-runtime.test.mjs",
     "verify:bundle": "node --test tests/isolated-bundle-smoke.test.mjs tests/release-bundle-contents.test.mjs",
     "build": "npm test && npm run build:bundle:zip && npm run verify:bundle",
     "build:bundle": "node scripts/build-skill-bundle.mjs",

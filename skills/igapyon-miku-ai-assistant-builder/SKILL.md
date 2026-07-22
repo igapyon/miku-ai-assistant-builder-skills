@@ -60,6 +60,7 @@ Agent Builder向けは、端末からの埋め込みファイルを利用でき�
 - Knowledge sourcesを生成するときは、[miku-text-bundle連携](references/knowledge-sources/03-miku-text-bundle.md)を読み、同梱`miku-text-bundle`を使用する。
 - 手動資料数から自動生成枠と`--max-chars`を決めるときは、[Agent Builderのファイル枠配分](references/knowledge-sources/06-upload-file-budget.md)を読む。
 - 登録用DOCXを生成するときは、[miku-md2docx連携](references/knowledge-sources/05-miku-md2docx.md)を読み、同梱`miku-md2docx`を使用する。
+- **Experimental:** 1つのMarkdownテキストを見出し単位の複数シートXLSXへ変換して検証するときは、[miku-md2xlsx連携](references/knowledge-sources/07-miku-md2xlsx.md)を読み、同梱`miku-md2xlsx`を使用する。Excelブック出力を既定の二段階変換へ自動適用しない。
 - ランタイムの版、選択順、SHA-256を確認するときは、[同梱ランタイム](references/runtime-artifacts.md)を読む。
 - 本スキルの実行にはNode.js 22以降を必要とする。変換バックエンドの指定がなければNode.js版を使用し、Java版は利用者が明示した場合に選択する。
 - 新規実行ディレクトリを作るときは、開始確認後に同梱[scripts/create-run-directory.mjs](scripts/create-run-directory.mjs)を使う。会話中の時刻、モデルの推測、手入力した時分から実行IDを作らない。
