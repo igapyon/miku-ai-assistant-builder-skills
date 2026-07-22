@@ -27,7 +27,10 @@ test("generated index is required and current", () => {
     "references/platform/02-limitations.md",
     "references/platform/03-gemini-gems.md",
     "references/workflows/01-folder-conversion.md",
+    "references/workflows/02-repeatable-conversion-job.md",
+    "scripts/create-conversion-job.mjs",
     "scripts/create-run-directory.mjs",
+    "scripts/run-conversion-job.mjs",
     "runtime/miku-md2docx-1.0.1.mjs",
     "runtime/miku-md2docx-java-1.0.1.jar",
     "runtime/miku-text-bundle-1.6.0.mjs",
@@ -155,6 +158,29 @@ test("folder conversion stops after preparation and resumes from persistent stat
   assert.match(workflow, /「`manual-input\/`へ置いてください」だけで終えず/);
   assert.match(workflow, /フルパスは人向けのローカル作業案内.*Knowledgeファイル.*含めない/);
   assert.match(readme, /解決済みフルパスと出力先基準の相対パスを利用者へ示します/);
+});
+
+test("stage 2 creates and runs a reusable fixed-structure conversion job", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+  const repeatableJob = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/02-repeatable-conversion-job.md"),
+    "utf8"
+  );
+
+  for (const content of [readme, skillMd, workflow, repeatableJob]) {
+    assert.match(content, /conversion-plan\.json/);
+    assert.match(content, /run-conversion\.mjs/);
+  }
+  assert.match(skillMd, /初回変換.*同じランナー/s);
+  assert.match(workflow, /個別に本実行せず/);
+  assert.match(repeatableJob, /内容だけを更新/);
+  assert.match(repeatableJob, /既存.*upload\/.*変更せず停止/s);
+  assert.match(repeatableJob, /意味上の正確性.*機密情報.*自動承認しない/s);
 });
 
 test("conversion outputs use timestamped run directories without changing them on resume", () => {

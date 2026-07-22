@@ -66,7 +66,8 @@ ZIP は Agent home 直下へ展開する形式で、内部のスキルは `skill
 1. 主対象のAgent Builder、またはGemを選び、Gemの場合はMarkdownのまま使うかDOCX化するかを選ぶ。
 2. 対象フォルダを棚卸しし、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定して、`manual-input/`への追加資料の準備待ちで停止する。
 3. スキルを再度起動し、対象サービスで利用可能なファイル枠に収まるよう、`miku-text-bundle --mode knowledge-source`の自動バンドル数を調整する。
-4. 選択した形式で最終`upload/`を構成し、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を生成する。
+4. 確定した入力パス、手動資料、生成数、形式、basenameから、その実行専用の`work/conversion-plan.json`と`work/run-conversion.mjs`を作る。
+5. 初回からNode.jsランナーを実行して最終`upload/`を構成し、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を生成する。
 
 出力先の明示指定がなければ、新規変換ごとに次の日時付きディレクトリを作ります。
 
@@ -81,6 +82,14 @@ workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/
 `work/preparation-status.md`が同じ実行の第2段階を別セッションから再開する状態を保持します。`work/execution-record.md`には今回の指定内容、実行条件、入力と出力の実績、検証結果を残します。
 
 前回と同じ条件で新たに作り直す場合は、前回の`work/execution-record.md`を参考にします。前回値を復唱して人が確認した後、入力内容と製品上限を再検証し、新しい日時付き実行ディレクトリを作って第1段階から始めます。前回の作業フォルダや`manual-input/`、`upload/`は再利用・自動コピーしません。
+
+一方、入力ファイルと手動資料の相対パス、個数、最終basename、形式を固定したまま内容だけを更新する場合は、同じ実行ディレクトリで次を実行できます。
+
+```bash
+node work/run-conversion.mjs
+```
+
+ランナーは初回の第二段階でも使用したものです。原本と`manual-input/`の内容変更は許可しますが、ファイル構成や自動生成数が変わった場合は既存の正常な`upload/`を変更せず停止します。構成を変える場合は新しい日時付き実行ディレクトリで第1段階から実行します。内容更新後の正確性、機密性、権限、対象サービスの最新仕様、配備後の検索品質は、人またはAI Agentが改めて確認します。
 
 手動追加資料の準備を依頼するときは、作成済み`manual-input/`の解決済みフルパスと出力先基準の相対パスを利用者へ示します。フルパスは人向けのローカル作業案内だけに使い、Knowledgeファイルには含めません。
 

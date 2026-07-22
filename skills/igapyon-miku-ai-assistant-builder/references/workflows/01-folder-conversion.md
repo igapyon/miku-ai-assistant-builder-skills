@@ -49,6 +49,8 @@ Gemでは、Knowledge用Markdownを`markdown`のまま使うか`docx`へ変換�
 
 反復実行は同一実行の第2段階再開ではない。前回の実行ディレクトリを変更せず、新しい日時付き実行ディレクトリを作って第1段階から開始する。前回の`manual-input/`、`upload/`、`work/`を自動コピーせず、新しい空の`manual-input/`を作る。新しい`work/preparation-status.md`と`work/execution-record.md`には参照元の記録パスを残す。
 
+ファイルの相対パス集合、個数、最終basename、形式を変えずに内容だけを更新する依頼は、この反復実行ではなく[確定済み構成の再実行可能な変換ジョブ](02-repeatable-conversion-job.md)として扱う。第2段階で生成・初回実行済みの`work/run-conversion.mjs`を同じ実行ディレクトリで再実行する。構成差がある場合はランナーを迂回せず、この反復実行として新しい実行ディレクトリを作る。
+
 ## 状態遷移
 
 このワークフローは次の二段階を別のターンで実行する。
@@ -100,6 +102,7 @@ node <skill-directory>/scripts/create-run-directory.mjs --base-directory <output
 - 機密情報、個人情報、資格情報、秘密鍵などを検出した場合は、`upload/`への複製を止めて要確認へ記録する。
 - 出力basenameの競合は、変換やコピーより前に検出する。自動改名や上書きで解決しない。
 - `upload/`を変更する前に最終出力計画を確定する。途中失敗時に既存の正常な`upload/`を部分更新しない。
+- 第2段階の初回変換から、確定済み計画に基づく同じNode.jsランナーを使う。AI AgentがCLIの本実行を別経路で再現しない。
 
 ## 第1段階: 自動テキスト入力の確定と準備待ち
 
@@ -250,23 +253,22 @@ Invoke this skill with this execution record as a reference. Confirm or change t
 5. 手動Markdownを選択形式にかかわらず1件として数え、検証済みの準備済み文書と合わせた手動資料数`M`を確定する。Agent Builderで`M`が20以上なら、19件以下への削減を求めて停止する。Gemでは実画面で確認した上限を使う。
 6. 対象サービスで確認した総ファイル上限から自動生成枠`A`を求める。Agent Builderでは`A = 20 - M`とする。Gemでは20件を流用しない。選択済みの適格な自動入力ファイル数`N`が0なら停止し、目標自動出力数を`T = min(N, A)`とする。
 7. 選択済み自動入力の合計文字数`C`を求め、`maxChars = max(120000, ceil(C / T))`を初期値とする。120,000文字は運用上の下限であり、Microsoftの制限値ではない。
-8. 同梱`miku-text-bundle`をknowledge-sourceモードでdry-runする。収集件数が`N`と一致し、推定Knowledgeファイル数が`A`以下になるまで、対象条件の修正または`maxChars`の増加とdry-runを繰り返す。推定数が`A`未満でも、空き枠を埋めるための分割は行わない。
-9. 条件を満たした値で本実行し、番号付きMarkdownを`work/knowledge-markdown/`へ、管理用indexを`work/knowledge-index.md`へ配置する。本実行の番号付きMarkdownが`A`を超えた場合は最終化せず、より大きい`maxChars`で再生成する。
-10. 次の最終basenameをすべて列挙し、重複がないことを変換やコピーの前に確認する。
+8. 同梱`miku-text-bundle`をknowledge-sourceモードでdry-runする。収集件数が`N`と一致し、推定Knowledgeファイル数が`A`以下になるまで、対象条件の修正または`maxChars`の増加とdry-runを繰り返す。推定数が`A`未満でも、空き枠を埋めるための分割は行わない。このdry-runは計画確定用であり、最終成果物を生成しない。
+9. 次の最終basenameをすべて列挙し、重複がないことを変換やコピーの前に確認する。
     - `work/knowledge-markdown/*.md`を選択形式でコピーまたはDOCX化したbasename
     - `manual-input/`のMarkdownを選択形式でコピーまたはDOCX化したbasename
     - 検証済みの準備済みOffice文書のbasename
-11. 競合、未対応形式、確認待ちがあれば`items-to-confirm.md`へ記録し、`upload/`を変更せず停止する。
-12. 状態を`finalizing`へ更新し、`M`、`A`、`N`、`T`、`C`、採用した`maxChars`、dry-run推定数、本実行生成数を記録する。
-13. Agent BuilderまたはGemのDOCX選択では、番号付きMarkdownと手動Markdownを`miku-md2docx`で一対一変換する。GemのMarkdown選択では`miku-md2docx`を実行せず、Markdownをそのままコピーする。出力先は既存の正常な`upload/`とは別の一時的な場所とする。
-14. 準備済みOffice文書を一時的な出力場所へコピーし、原本とのサイズまたはハッシュ一致を確認する。
+10. 競合、未対応形式、確認待ちがあれば`items-to-confirm.md`へ記録し、`upload/`を変更せず停止する。
+11. 状態を`finalizing`へ更新し、`M`、`A`、`N`、`T`、`C`、採用した`maxChars`、dry-run推定数、固定する自動生成数、最終basenameを記録する。
+12. [確定済み構成の再実行可能な変換ジョブ](02-repeatable-conversion-job.md)に従い、確認済みの自動入力相対パス集合、手動資料、形式、上限、CLI引数を`work/conversion-plan.json`へ作る。同梱`create-conversion-job.mjs`で計画を正規化し、`work/run-conversion.mjs`を生成する。
+13. `miku-text-bundle`と`miku-md2docx`をAI Agentが個別に本実行せず、生成した`work/run-conversion.mjs`を実行する。ランナーは一時出力で本実行し、MarkdownをコピーまたはDOCX変換し、準備済みOffice文書を一時的な出力場所へコピーしてハッシュ一致を確認する。構成検証に成功した場合だけ`work/knowledge-markdown/`、`work/knowledge-index.md`、`upload/`を一括更新する。
+14. ランナーの本実行生成数、Source Mapping、最終basename、成功履歴が計画と一致することを確認する。ランナーが構成差または生成数差を報告した場合は、既存`upload/`を維持して停止する。
 15. MarkdownまたはDOCXの開封可否、元相対パス、ファイル境界、リンク、秘密情報と、準備済み文書の読取可否を検証する。
 16. 自動生成物と手動資料を合わせた最終候補総数が、対象サービスで確認した上限以下であることを確認する。
-17. すべての検証に成功した場合だけ、最終`upload/`を登録候補のフラット構成へ置き換える。
-18. `upload/`の実在ファイルからKnowledge一覧を作り、Agent Builderでは`agent-builder-input.md`、GemではName、Description、Custom instructions、Knowledge、Items to confirmを持つ`gem-input.md`へbasenameだけを記載する。
-19. `upload/`の未参照ファイルと入力用Markdownの参照切れがないことを双方向に確認する。
-20. `items-to-confirm.md`を確定し、`preparation-status.md`と`execution-record.md`へ実行パラメータ、入力と出力の実績、検証結果を記録して状態を`finalized`へ更新する。
-21. 利用者へ`upload/`の登録候補、手動資料数、自動生成数、合計数と確認事項を示す。
+17. `upload/`の実在ファイルからKnowledge一覧を作り、Agent Builderでは`agent-builder-input.md`、GemではName、Description、Custom instructions、Knowledge、Items to confirmを持つ`gem-input.md`へbasenameだけを記載する。
+18. `upload/`の未参照ファイルと入力用Markdownの参照切れがないことを双方向に確認する。
+19. `items-to-confirm.md`を確定し、`preparation-status.md`と`execution-record.md`へ実行パラメータ、変換ジョブのパス、入力と出力の実績、検証結果を記録して状態を`finalized`へ更新する。
+20. 利用者へ`upload/`の登録候補、手動資料数、自動生成数、合計数、確認事項、内容更新時の`node work/run-conversion.mjs`を示す。
 
 ## 分類
 
@@ -290,6 +292,8 @@ Invoke this skill with this execution record as a reference. Confirm or change t
 - 第1段階では自動処理対象だけが確定し、`miku-text-bundle`がまだ実行されていない。
 - `preparation-status.md`から別セッションで再開できる。
 - `execution-record.md`に今回の指定内容と実績が残り、次回はそれを参考に新しい日時付き実行ディレクトリで開始できる。
+- 第2段階で`work/conversion-plan.json`と`work/run-conversion.mjs`が生成され、初回変換もそのランナーで成功している。
+- 構成固定の内容更新では同じランナーを再実行でき、入力パス集合、個数、basename、形式の差異を検出した場合は既存`upload/`を維持して停止する。
 - `manual-input/`の原本が変更されていない。
 - `agent-builder-input.md`または`gem-input.md`が対象サービスの入力項目順になっている。
 - `gem-input.md`にName、Description、Custom instructions、Knowledge、Items to confirmがこの順で存在する。
