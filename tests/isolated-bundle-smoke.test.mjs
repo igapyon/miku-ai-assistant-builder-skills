@@ -52,6 +52,22 @@ test("bundle installs directly under the agent home skills directory", () => {
       execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-text-bundle-java-1.6.0.jar"), "--help"], { encoding: "utf8" }),
       /Usage:/
     );
+    assert.equal(
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2xlsx-0.9.5.mjs"), "--version"], { encoding: "utf8" }).trim(),
+      "0.9.5"
+    );
+    assert.match(
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2xlsx-0.9.5.mjs"), "--help"], { encoding: "utf8" }),
+      /Usage:/
+    );
+    assert.equal(
+      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2xlsx-java-0.9.5.jar"), "--version"], { encoding: "utf8" }).trim(),
+      "0.9.5"
+    );
+    assert.match(
+      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2xlsx-java-0.9.5.jar"), "--help"], { encoding: "utf8" }),
+      /Usage:/
+    );
 
     const runBase = path.resolve(agentHome, "smoke-output");
     const runResult = JSON.parse(execFileSync(process.execPath, [

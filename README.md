@@ -30,14 +30,17 @@ Agent BuilderとGemでは機能、上限、検証条件が異なります。各�
 
 - `skills/igapyon-miku-ai-assistant-builder/`
 
-このスキルは、Knowledge source生成用の`miku-text-bundle`とDOCX生成用の
-`miku-md2docx`について、Node.js版とJava版のCLIランタイムを同梱する
-CLI-backed型です。
+このスキルは、Knowledge source生成用の`miku-text-bundle`、DOCX生成用の
+`miku-md2docx`、複数シートXLSX生成用の`miku-md2xlsx`について、Node.js版と
+Java版のCLIランタイムを同梱するCLI-backed型です。
 
 同梱ランタイムは次のとおりです。
 
 - `miku-text-bundle` Node.js v1.6.0 / Java v1.6.0
 - `miku-md2docx` Node.js v1.0.1 / Java v1.0.1
+- `miku-md2xlsx` Node.js v0.9.5 / Java v0.9.5（Excelブック出力: **Experimental**）
+
+Excelブック出力は**Experimental**であり、既定の二段階変換にはまだ組み込まれていません。
 
 ## Build
 

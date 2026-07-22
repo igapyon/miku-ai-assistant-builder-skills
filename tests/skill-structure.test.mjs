@@ -22,6 +22,7 @@ test("generated index is required and current", () => {
     "references/knowledge-sources/03-miku-text-bundle.md",
     "references/knowledge-sources/05-miku-md2docx.md",
     "references/knowledge-sources/06-upload-file-budget.md",
+    "references/knowledge-sources/07-miku-md2xlsx.md",
     "references/runtime-artifacts.md",
     "references/platform/01-baseline.md",
     "references/platform/02-limitations.md",
@@ -33,6 +34,8 @@ test("generated index is required and current", () => {
     "scripts/run-conversion-job.mjs",
     "runtime/miku-md2docx-1.0.1.mjs",
     "runtime/miku-md2docx-java-1.0.1.jar",
+    "runtime/miku-md2xlsx-0.9.5.mjs",
+    "runtime/miku-md2xlsx-java-0.9.5.jar",
     "runtime/miku-text-bundle-1.6.0.mjs",
     "runtime/miku-text-bundle-java-1.6.0.jar"
   ]) assert.ok(paths.includes(requiredPath), `index lacks ${requiredPath}`);
@@ -63,6 +66,18 @@ test("bundled runtimes match declared versions and digests", () => {
       command: "java",
       version: "1.6.0",
       sha256: "b05d78b142af4cb8f99989a7428c6516e4aec2abea4ade51e772eb4cb853df97"
+    },
+    {
+      file: "miku-md2xlsx-0.9.5.mjs",
+      command: process.execPath,
+      version: "0.9.5",
+      sha256: "cc2c292a421c3a5207508b1ba3b63a2b7f558e35a2b2837de0005e6d0ca44b20"
+    },
+    {
+      file: "miku-md2xlsx-java-0.9.5.jar",
+      command: "java",
+      version: "0.9.5",
+      sha256: "1edec76192c260bfb89a951a7f7a74e5daede77c3f478668ad0ca6babe44c58f"
     }
   ];
 
@@ -77,6 +92,20 @@ test("bundled runtimes match declared versions and digests", () => {
     const actualVersion = execFileSync(runtime.command, args, { cwd: ROOT, encoding: "utf8" }).trim();
     assert.equal(actualVersion, runtime.version, `version mismatch: ${runtime.file}`);
   }
+});
+
+test("Excel workbook output is explicitly Experimental", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const md2xlsxReference = fs.readFileSync(
+    path.resolve(skillRoot, "references/knowledge-sources/07-miku-md2xlsx.md"),
+    "utf8"
+  );
+
+  for (const content of [readme, skillMd, md2xlsxReference]) {
+    assert.match(content, /Experimental/);
+  }
+  assert.match(skillMd, /Excelブック出力を既定の二段階変換へ自動適用しない/);
 });
 
 test("skill frontmatter and canonical location match the installable name", () => {
