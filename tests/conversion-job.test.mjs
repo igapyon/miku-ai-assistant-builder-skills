@@ -164,3 +164,93 @@ test("an Agent Builder conversion job creates DOCX through the same generated ru
     assert.equal(content.subarray(0, 2).toString("ascii"), "PK");
   }
 });
+
+test("a conversion job creates one XLSX workbook for one reviewed JSON input", (t) => {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "miku-conversion-json2xlsx-"));
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
+  const sourceDirectory = path.resolve(temporaryRoot, "source");
+  const runDirectory = path.resolve(temporaryRoot, "run");
+  const mappingDirectory = path.resolve(runDirectory, "work/json2xlsx-mappings");
+  fs.mkdirSync(sourceDirectory, { recursive: true });
+  fs.mkdirSync(path.resolve(runDirectory, "manual-input"), { recursive: true });
+  fs.mkdirSync(mappingDirectory, { recursive: true });
+  fs.writeFileSync(path.resolve(sourceDirectory, "records.json"), JSON.stringify([
+    { id: 1, name: "alpha" },
+    { id: 2, name: "beta" }
+  ]), "utf8");
+  const mappingPath = path.resolve(mappingDirectory, "records.mapping.json");
+  fs.writeFileSync(mappingPath, `${JSON.stringify({
+    schemaVersion: 1,
+    sheets: [{
+      name: "Records",
+      kind: "root",
+      sourcePath: "$",
+      recordIdColumn: "record_id",
+      sourceRecordColumn: "source_record",
+      columns: [
+        { name: "id", sourcePath: "$.id", type: "number" },
+        { name: "name", sourcePath: "$.name", type: "string" }
+      ]
+    }]
+  }, null, 2)}\n`, "utf8");
+  const mappingSha256 = crypto.createHash("sha256").update(fs.readFileSync(mappingPath)).digest("hex");
+
+  const { runnerPath } = createConversionJob({
+    runDirectory,
+    skillDirectory: skillRoot,
+    plan: {
+      targetPlatform: "agent-builder",
+      knowledgeFormat: "docx",
+      totalFileLimit: 20,
+      sourceDirectory,
+      automaticInputPaths: [],
+      automaticOutputCount: 0,
+      jsonWorkbookInputs: [{
+        relativePath: "records.json",
+        mappingPath: "json2xlsx-mappings/records.mapping.json",
+        mappingSha256,
+        outputBasename: "records.xlsx"
+      }],
+      manualInputs: [],
+      textBundle: {
+        backend: "node",
+        filenamePrefix: "knowledge",
+        maxChars: 120000,
+        maxInputFileBytes: 200000000,
+        encoding: "utf-8",
+        addExcludeExtensions: [".json", ".jsonl"]
+      },
+      md2docx: { backend: "node" },
+      json2xlsx: { backend: "node" }
+    }
+  });
+
+  const firstResult = JSON.parse(execFileSync(process.execPath, [runnerPath], { encoding: "utf8" }));
+  const workbookPath = path.resolve(runDirectory, "upload/records.xlsx");
+  assert.equal(fs.readFileSync(workbookPath).subarray(0, 2).toString("ascii"), "PK");
+  assert.equal(firstResult.jsonWorkbookInputCount, 1);
+  assert.deepEqual(firstResult.finalBasenames, ["records.xlsx"]);
+  assert.deepEqual(firstResult.jsonWorkbookResults[0].warningCodes, []);
+
+  fs.writeFileSync(path.resolve(sourceDirectory, "records.json"), JSON.stringify([
+    { id: 3, name: "gamma" }
+  ]), "utf8");
+  const secondResult = JSON.parse(execFileSync(process.execPath, [runnerPath], { encoding: "utf8" }));
+  assert.equal(secondResult.jsonWorkbookInputCount, 1);
+  assert.equal(fs.readFileSync(workbookPath).subarray(0, 2).toString("ascii"), "PK");
+
+  const beforeMappingChange = digestDirectory(path.resolve(runDirectory, "upload"));
+  fs.appendFileSync(mappingPath, "\n", "utf8");
+  assert.throws(
+    () => execFileSync(process.execPath, [runnerPath], { encoding: "utf8", stdio: "pipe" }),
+    /JSON workbook mapping digest changed/
+  );
+  assert.equal(digestDirectory(path.resolve(runDirectory, "upload")), beforeMappingChange);
+  fs.writeFileSync(mappingPath, fs.readFileSync(mappingPath, "utf8").trimEnd() + "\n", "utf8");
+
+  fs.writeFileSync(path.resolve(sourceDirectory, "unexpected.jsonl"), "{\"id\":4,\"name\":\"delta\"}\n", "utf8");
+  assert.throws(
+    () => execFileSync(process.execPath, [runnerPath], { encoding: "utf8", stdio: "pipe" }),
+    /JSON workbook input file set changed/
+  );
+});

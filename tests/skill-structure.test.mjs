@@ -23,6 +23,7 @@ test("generated index is required and current", () => {
     "references/knowledge-sources/05-miku-md2docx.md",
     "references/knowledge-sources/06-upload-file-budget.md",
     "references/knowledge-sources/07-miku-md2xlsx.md",
+    "references/knowledge-sources/08-miku-json2xlsx.md",
     "references/runtime-artifacts.md",
     "references/platform/01-baseline.md",
     "references/platform/02-limitations.md",
@@ -36,6 +37,7 @@ test("generated index is required and current", () => {
     "runtime/miku-md2docx-java-1.0.1.jar",
     "runtime/miku-md2xlsx-0.9.5.mjs",
     "runtime/miku-md2xlsx-java-0.9.5.jar",
+    "runtime/miku-json2xlsx-0.4.1.mjs",
     "runtime/miku-text-bundle-1.6.0.mjs",
     "runtime/miku-text-bundle-java-1.6.0.jar"
   ]) assert.ok(paths.includes(requiredPath), `index lacks ${requiredPath}`);
@@ -78,6 +80,12 @@ test("bundled runtimes match declared versions and digests", () => {
       command: "java",
       version: "0.9.5",
       sha256: "1edec76192c260bfb89a951a7f7a74e5daede77c3f478668ad0ca6babe44c58f"
+    },
+    {
+      file: "miku-json2xlsx-0.4.1.mjs",
+      command: process.execPath,
+      version: "miku-json2xlsx 0.4.1",
+      sha256: "6160dba0563b97452a38b34359e31aceffe3f662f0ec36bc398523e5737d2dc2"
     }
   ];
 
@@ -106,6 +114,28 @@ test("Excel workbook output is explicitly Experimental", () => {
     assert.match(content, /Experimental/);
   }
   assert.match(skillMd, /Excelブック出力を既定の二段階変換へ自動適用しない/);
+});
+
+test("JSON and JSONL use reviewed one-input-one-workbook conversion", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const json2xlsxReference = fs.readFileSync(
+    path.resolve(skillRoot, "references/knowledge-sources/08-miku-json2xlsx.md"),
+    "utf8"
+  );
+  const repeatableJob = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/02-repeatable-conversion-job.md"),
+    "utf8"
+  );
+
+  for (const content of [readme, skillMd, json2xlsxReference, repeatableJob]) {
+    assert.match(content, /miku-json2xlsx|json2xlsx/);
+    assert.match(content, /1入力1XLSX|1入力ファイルにつき1つのXLSX|1入力1ブック/);
+  }
+  assert.match(skillMd, /mapping.*人がレビュー/s);
+  assert.match(json2xlsxReference, /mappingSha256/);
+  assert.match(json2xlsxReference, /miku-text-bundle.*重複/s);
+  assert.match(repeatableJob, /jsonWorkbookInputs/);
 });
 
 test("skill frontmatter and canonical location match the installable name", () => {
@@ -346,15 +376,15 @@ test("manual files determine the remaining automatic upload budget", () => {
     "utf8"
   );
 
-  assert.match(skillMd, /第1段階では`miku-text-bundle`を実行せず/);
+  assert.match(skillMd, /第1段階では.*`miku-text-bundle`を実行せず/s);
   assert.match(skillMd, /人力資料は最大19件/);
-  assert.match(skillMd, /A = 20 - M/);
+  assert.match(skillMd, /A = 20 - M - J/);
   assert.match(skillMd, /T = min\(N, A\)/);
   assert.match(skillMd, /max\(120000, ceil\(C \/ T\)\)/);
   assert.match(workflow, /空き枠を埋めるための分割は行わない/);
   assert.match(workflow, /Agent Builderでは.*最終登録候補総数が20以下/);
   assert.match(budget, /M`が20以上.*19件以下への削減/);
-  assert.match(budget, /`N`が0.*停止/);
+  assert.match(budget, /N = 0`かつ`J = 0.*停止/);
   assert.match(budget, /推定Knowledgeファイル数が`A`を超える場合/);
   assert.match(budget, /Microsoftの製品制限ではない/);
   assert.match(bundleReference, /<calculatedMaxChars>/);
@@ -376,7 +406,7 @@ test("automatic processing includes eligible text through miku-text-bundle by de
     "utf8"
   );
 
-  assert.match(skillMd, /\.md.*\.mjs.*\.js.*原則すべて自動処理対象/);
+  assert.match(skillMd, /\.md.*\.mjs.*\.js.*原則すべて自動バンドル候補/);
   assert.match(workflow, /既定で`Auto include`/);
   assert.match(workflow, /旧版、重複候補だけを理由に対象を絞り込まない/);
   assert.match(budget, /関連性、旧版、重複の推定だけで`N`を減らさない/);
@@ -442,7 +472,7 @@ test("finalization converts Markdown and carries validated Office documents", ()
 
   assert.match(skillMd, /manual-input\/`のMarkdownを一対一で`miku-md2docx`/);
   assert.match(skillMd, /DOCX、PPTX、XLSX/);
-  assert.match(workflow, /準備済みOffice文書を一時的な出力場所へコピー/);
+  assert.match(workflow, /準備済みOffice文書の一時コピー/);
   assert.match(workflow, /状態を`finalized`へ更新/);
   assert.match(limitations, /\.docx.*\.pptx.*\.xlsx/);
   assert.match(limitations, /手動追加Markdownを直接登録せずDOCXへ変換/);

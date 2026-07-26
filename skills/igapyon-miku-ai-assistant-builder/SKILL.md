@@ -1,6 +1,6 @@
 ---
 name: igapyon-miku-ai-assistant-builder
-description: ベータ版。Microsoft 365 Copilot内の軽量なAgent BuilderまたはGoogle GeminiのGemに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Gemにも対応する。第1段階で同梱`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定し、人間の資料追加を待つ。第2段階では確定条件から再実行可能なNode.js変換ジョブを作り、Agent Builder向けMarkdownをDOCX化し、GemではMarkdownのまま使うか同梱`miku-md2docx`でDOCX化するかを利用者が選ぶ。構成固定の内容更新は同じジョブを再実行し、前回条件を再検討する反復実行では新しい作業フォルダを作る。ファイル添付を利用できるライセンス、アカウント、管理者設定が前提。`igapyon-miku-ai-assistant-builder`または`miku-ai-assistant-builder`が明示されたとき、このスキルを使ったフォルダ変換、その再開、確定済み構成の内容更新、または前回条件を参照した再実行が依頼されたときに使用する。Copilot Studio固有のエージェント作成には使用しない。
+description: ベータ版。Microsoft 365 Copilot内の軽量なAgent BuilderまたはGoogle GeminiのGemに投入するデータを準備し、雑多な既存フォルダを二段階で配備用フォルダへ変換するスキル。Agent Builderを主対象とし、Gemにも対応する。第1段階でJSON / JSONLを1入力1XLSX候補、それ以外の同梱`miku-text-bundle`対応テキストをバンドル候補として確定し、人間の資料追加を待つ。第2段階ではJSON / JSONLの明示mappingをレビューして固定し、確定条件から再実行可能なNode.js変換ジョブを作る。Agent Builder向けMarkdownをDOCX化し、GemではMarkdownのまま使うか同梱`miku-md2docx`でDOCX化するかを利用者が選ぶ。構成固定の内容更新は同じジョブを再実行し、前回条件を再検討する反復実行では新しい作業フォルダを作る。ファイル添付を利用できるライセンス、アカウント、管理者設定が前提。`igapyon-miku-ai-assistant-builder`または`miku-ai-assistant-builder`が明示されたとき、このスキルを使ったフォルダ変換、その再開、確定済み構成の内容更新、または前回条件を参照した再実行が依頼されたときに使用する。Copilot Studio固有のエージェント作成には使用しない。
 ---
 
 # Igapyon Miku AI Assistant Builder
@@ -36,7 +36,7 @@ description: ベータ版。Microsoft 365 Copilot内の軽量なAgent Builderま
 
 生成物は、利用者が管理するAgent BuilderまたはGemへの人手による配備を前提にする。このスキル自身はファイルのアップロード、エージェントやGemの共有、外部Web、公開リポジトリ、その他の外部サービスへの公開を行わない。
 
-`miku-text-bundle`対応テキストを原則すべて自動処理対象にすることは、配備用Knowledgeファイルを準備する際の入力範囲を示す。登録成功やKnowledge一覧への表示は、配備後のAIアシスタントが全情報を常に検索・取得・参照できることや、回答へ必ず利用することを保証しない。利用者へこの違いを説明し、配備後は代表的な質問で確認するよう案内する。
+JSON / JSONLを1入力1XLSX候補とし、それ以外の`miku-text-bundle`対応テキストを原則すべて自動処理対象にすることは、配備用Knowledgeファイルを準備する際の入力範囲を示す。登録成功やKnowledge一覧への表示は、配備後のAIアシスタントが全情報を常に検索・取得・参照できることや、回答へ必ず利用することを保証しない。利用者へこの違いを説明し、配備後は代表的な質問で確認するよう案内する。
 
 ## Purpose
 
@@ -58,6 +58,7 @@ Agent Builder向けは、端末からの埋め込みファイルを利用でき�
 - 既存フォルダを変換するとき、または準備済みの変換を再開するときは、[雑多なフォルダの二段階変換](references/workflows/01-folder-conversion.md)を読む。
 - 第2段階で再実行可能な変換ジョブを作るとき、または構成を固定したまま内容だけを更新するときは、[確定済み構成の再実行可能な変換ジョブ](references/workflows/02-repeatable-conversion-job.md)を読む。
 - Knowledge sourcesを生成するときは、[miku-text-bundle連携](references/knowledge-sources/03-miku-text-bundle.md)を読み、同梱`miku-text-bundle`を使用する。
+- JSON / JSONLを1入力1XLSXへ変換するときは、[miku-json2xlsx連携](references/knowledge-sources/08-miku-json2xlsx.md)を読み、同梱`miku-json2xlsx`を使用する。CLIはmappingを自動承認しないため、inspection、mapping案、materialな仮定、出力basenameを人がレビューしてから計画へ固定する。
 - 手動資料数から自動生成枠と`--max-chars`を決めるときは、[Agent Builderのファイル枠配分](references/knowledge-sources/06-upload-file-budget.md)を読む。
 - 登録用DOCXを生成するときは、[miku-md2docx連携](references/knowledge-sources/05-miku-md2docx.md)を読み、同梱`miku-md2docx`を使用する。
 - **Experimental:** 1つのMarkdownテキストを見出し単位の複数シートXLSXへ変換して検証するときは、[miku-md2xlsx連携](references/knowledge-sources/07-miku-md2xlsx.md)を読み、同梱`miku-md2xlsx`を使用する。Excelブック出力を既定の二段階変換へ自動適用しない。
@@ -74,29 +75,30 @@ Agent Builder向けは、端末からの埋め込みファイルを利用でき�
 
 利用者がファイル構成、個数、basename、形式を変えず、確定済み原本と手動資料の内容だけを更新すると明示した場合は、同じ実行ディレクトリの`work/conversion-plan.json`と`work/run-conversion.mjs`を確認する。構成が計画と一致する場合だけランナーを再実行し、新しい実行ディレクトリを作らない。構成差がある場合は計画を手編集して迂回せず、新規変換を案内する。
 
-### 第1段階: 自動テキスト入力の確定と準備待ち
+### 第1段階: 自動入力の確定と準備待ち
 
 1. 開始確認ゲートで確定した対象サービスと自動処理の入力範囲を復唱する。その後、利用者の目的、想定利用者、代表的な質問、出力先を確認する。出力先の明示指定がなければ、確認済みの入力元を扱う作業リポジトリの`workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/`を新規変換の既定出力先にする。スキルのインストール元を、現在位置だけを理由に出力先として使わない。GemではMarkdownとDOCXのどちらを使うかも確認する。必須項目は質問前に仮定で記録しない。利用者が明示的に指定を委任した項目だけは、回答後に想定を明示して補完する。
 2. Agent Builderでは[制限・設計上の注意](references/platform/02-limitations.md)、Gemでは[Google Gemini Gemの基本事項](references/platform/03-gemini-gems.md)を使い、ファイル追加機能を利用できる環境であることと適合性を確認する。
-3. 原本を変更せずに棚卸しする。入力元にある`.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルは原則すべて自動処理対象とする。内容の関連性、旧版、重複の推定だけを理由に自動除外しない。`.env`と`.env.*`、秘密情報、出力先、明示的に指定された除外、ランタイムが技術的に扱えないファイルだけを理由付きで除外または確認待ちにする。
+3. 原本を変更せずに棚卸しする。入力元にある適格な`.json`と`.jsonl`は、同梱`miku-json2xlsx`で1入力1XLSXにする`JSON workbook`候補へ分類する。その他の`.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルは原則すべて自動バンドル候補とする。同じJSON / JSONLを両方へ重複させない。内容の関連性、旧版、重複の推定だけを理由に自動除外しない。`.env`と`.env.*`、秘密情報、出力先、明示的に指定された除外、ランタイムが技術的に扱えないファイルだけを理由付きで除外または確認待ちにする。
 4. DOCX、PPTX、XLSX、PDF、画像などの非テキスト資料を自動でテキスト化せず、`miku-text-bundle`の自動処理対象に含めない。Knowledge sourceとして必要なら、人が準備して`manual-input/`へ置く候補として記録する。この時点ではバンドルを生成しない。
-5. 人間が追加資料の原本を置く空の`manual-input/`、再開に必要な`work/preparation-status.md`、次回の反復実行で参照する`work/execution-record.md`を作る。状態は`awaiting-manual-input`とし、入力元、出力先、自動処理対象、理由付き除外、確認待ち、実行条件、警告、再開方法を記録する。反復実行の場合は参照した前回記録のパスも記録する。
+5. 人間が追加資料の原本を置く空の`manual-input/`、JSON mappingを置く空の`work/json2xlsx-mappings/`、再開に必要な`work/preparation-status.md`、次回の反復実行で参照する`work/execution-record.md`を作る。状態は`awaiting-manual-input`とし、入力元、出力先、JSON workbook候補、テキストバンドル候補、理由付き除外、確認待ち、実行条件、警告、再開方法を記録する。反復実行の場合は参照した前回記録のパスも記録する。
 6. 作成済み`manual-input/`の解決済みフルパスと出力先基準の相対パスを利用者へ示し、そこへ手動追加資料を置くよう案内する。`~`、未展開の環境変数、現在位置に依存する相対パスだけで案内しない。追加可能な形式、原本を変更しない規則、利用者の実画面で確認したファイル上限も説明する。Agent Builderでは人力資料は最大19件とする。追加資料がない場合も明示的な確認を求める。
-7. 人間による追加資料の準備待ちとして必ず停止する。`miku-text-bundle`のdry-runと本実行、番号付きMarkdownのコピーまたはDOCX変換、`upload/`の構成、`agent-builder-input.md`または`gem-input.md`の生成はまだ行わない。
+7. 人間による追加資料の準備待ちとして必ず停止する。`miku-json2xlsx`のinspection、mapping作成、XLSX変換、`miku-text-bundle`のdry-runと本実行、番号付きMarkdownのコピーまたはDOCX変換、`upload/`の構成、`agent-builder-input.md`または`gem-input.md`の生成はまだ行わない。
 
 ### 第2段階: 再開と最終化
 
 1. 利用者が指定した出力先の`work/preparation-status.md`を読み、状態が`awaiting-manual-input`であること、対象サービス、Gemの出力形式、自動処理対象、実行条件が現在の入力に一致することを確認する。状態ファイルがない、完了済み、または内容が不整合なら新規変換として推測せず停止する。
 2. `manual-input/`を読み取り専用として棚卸しする。対象サービスでの対応形式、サイズ、読取可否、機密性、パスワード保護、同名衝突を確認し、未確認事項は`items-to-confirm.md`へ記録する。Markdownは選択形式にかかわらず1件として数える。
-3. Agent Builderでは[Agent Builderのファイル枠配分](references/knowledge-sources/06-upload-file-budget.md)に従い、自動生成枠`A = 20 - M`、適格な自動入力ファイル数`N`、目標自動出力数`T = min(N, A)`、合計文字数`C`、`maxChars = max(120000, ceil(C / T))`を求める。GemではAgent Builderの20件を流用せず、実画面で確認した上限から自動生成枠を求める。上限を確認できない場合は停止する。
-4. 同梱`miku-text-bundle`ランタイムが`--mode knowledge-source`をサポートすることを確認する。計算した`--max-chars`でdry-runし、推定Knowledgeファイル数が`A`を超える間は値を増やす。条件、入力パス集合、手動資料、固定出力basenameを[確定済み構成の再実行可能な変換ジョブ](references/workflows/02-repeatable-conversion-job.md)に従って`work/conversion-plan.json`へ保存し、同梱ヘルパーで`work/run-conversion.mjs`を生成する。
-5. CLIを個別に本実行せず、生成した`work/run-conversion.mjs`を実行する。ランナーは`miku-text-bundle`のdry-runと本実行を行い、Agent BuilderまたはGemの`docx`選択では`work/knowledge-markdown/`と`manual-input/`のMarkdownを一対一で`miku-md2docx`へ渡す。Gemの`markdown`選択では`miku-md2docx`を実行せずMarkdownをコピーする。さらに準備済み資料のコピー、構成検証、成功後の`upload/`一括更新を行う。初回と将来の内容更新で同じランナーを使う。
-6. ランナーが出力した`work/knowledge-markdown/`、`work/knowledge-index.md`、`upload/`、`work/conversion-history.jsonl`を確認する。未対応または未確認の形式は計画へ含めず、ランナー失敗時は既存の正常な`upload/`を維持して停止する。
-7. 自動生成物と手動追加物の出力basenameが衝突する場合は、自動改名や上書きをせず、`upload/`を変更する前に停止する。
-8. 元リポジトリ基準の相対パスとファイル境界が自動生成MarkdownまたはDOCX本文に残ることを確認する。Knowledgeファイル間の相対リンクには依存せず、外部参照には確認済みの絶対URLを使う。
-9. InstructionsとKnowledge sourcesを分離する。振る舞い、処理順、口調、禁止事項、出力形式はInstructionsへ置き、回答根拠となる事実だけをKnowledge sourcesへ置く。
-10. [入力項目と推奨形式](references/instructions/01-input-fields.md)に従い、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を作る。GemにはName、Description、Custom instructions、Knowledge、Items to confirmをこの順で含める。Custom instructionsはGem画面のInstructions欄へ転記する内容とする。Instructionsには登録済みKnowledge sourcesを優先して検索し、見つからない情報を推測しない方針を含める。いずれもKnowledge一覧では`upload/`を付けず、`upload/`に実在するbasenameだけを記載する。
-11. 対象サービスで確認した上限以内であることを含め、対応、開封可否、サイズ、リンク、重複、矛盾、機密情報、スキップ、参照切れ、未参照ファイルを確認する。問題がなければ`preparation-status.md`と`execution-record.md`へ対象サービス、形式、枠配分、実行パラメータ、入力と出力の実績、検証結果を記録し、状態を`finalized`へ更新して利用者へ最終確認を求める。
+3. 各JSON / JSONLについて同梱`miku-json2xlsx inspect --result-format json`を実行し、mapping v1案、未採用path、型、sheet、column、rootとchildの関係、出力basename、materialな仮定を人へ示す。人の承認後にmappingを`work/json2xlsx-mappings/`へ保存し、`validate-mapping --result-format json`で検証する。承認前にXLSXを生成しない。
+4. Agent Builderでは[Agent Builderのファイル枠配分](references/knowledge-sources/06-upload-file-budget.md)に従い、手動資料数`M`、JSON workbook数`J`、テキストバンドル枠`A = 20 - M - J`、適格なテキスト入力数`N`、目標テキスト出力数`T = min(N, A)`を求める。`N > 0`なら合計文字数`C`と`maxChars = max(120000, ceil(C / T))`を求める。GemではAgent Builderの20件を流用せず、実画面で確認した上限から枠を求める。上限を確認できない場合は停止する。
+5. `N > 0`なら、同梱`miku-text-bundle`ランタイムが`--mode knowledge-source`をサポートすることを確認する。`.json`と`.jsonl`を除外し、計算した`--max-chars`でdry-runして推定Knowledgeファイル数が`A`を超える間は値を増やす。`N = 0`かつ`J > 0`ならテキストバンドルを実行しない。条件、テキスト入力パス集合、JSON入力とmapping SHA-256、手動資料、固定出力basenameを[確定済み構成の再実行可能な変換ジョブ](references/workflows/02-repeatable-conversion-job.md)に従って`work/conversion-plan.json`へ保存し、同梱ヘルパーで`work/run-conversion.mjs`を生成する。
+6. CLIを個別に本実行せず、生成した`work/run-conversion.mjs`を実行する。ランナーはJSON入力集合とmapping SHA-256を検証し、各JSON / JSONLを一時領域で1つのXLSXへ変換する。必要なら`miku-text-bundle`のdry-runと本実行も行い、Agent BuilderまたはGemの`docx`選択では`work/knowledge-markdown/`と`manual-input/`のMarkdownを一対一で`miku-md2docx`へ渡す。Gemの`markdown`選択では`miku-md2docx`を実行せずMarkdownをコピーする。さらに準備済み資料のコピー、構成検証、成功後の`upload/`一括更新を行う。初回と将来の内容更新で同じランナーを使う。
+7. ランナーが出力した`work/knowledge-markdown/`、`work/knowledge-index.md`、`upload/`、`work/conversion-history.jsonl`を確認する。JSON workbookのwarning code、XLSXの開封可否、READMEデータ辞書、sheetとcolumn、入力との対応も確認する。未対応または未確認の形式は計画へ含めず、ランナー失敗時は既存の正常な`upload/`を維持して停止する。
+8. 自動生成物と手動追加物の出力basenameが衝突する場合は、自動改名や上書きをせず、`upload/`を変更する前に停止する。
+9. 元リポジトリ基準の相対パスとファイル境界が自動生成MarkdownまたはDOCX本文に残ることを確認する。JSON workbookは承認済みmapping、READMEデータ辞書、追跡列によって元入力との対応を確認する。Knowledgeファイル間の相対リンクには依存せず、外部参照には確認済みの絶対URLを使う。
+10. InstructionsとKnowledge sourcesを分離する。振る舞い、処理順、口調、禁止事項、出力形式はInstructionsへ置き、回答根拠となる事実だけをKnowledge sourcesへ置く。
+11. [入力項目と推奨形式](references/instructions/01-input-fields.md)に従い、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を作る。GemにはName、Description、Custom instructions、Knowledge、Items to confirmをこの順で含める。Custom instructionsはGem画面のInstructions欄へ転記する内容とする。Instructionsには登録済みKnowledge sourcesを優先して検索し、見つからない情報を推測しない方針を含める。いずれもKnowledge一覧では`upload/`を付けず、`upload/`に実在するbasenameだけを記載する。
+12. 対象サービスで確認した上限以内であることを含め、対応、開封可否、サイズ、リンク、重複、矛盾、機密情報、スキップ、参照切れ、未参照ファイルを確認する。問題がなければ`preparation-status.md`と`execution-record.md`へ対象サービス、形式、枠配分、実行パラメータ、入力と出力の実績、検証結果を記録し、状態を`finalized`へ更新して利用者へ最終確認を求める。
 
 ## Output
 
@@ -114,6 +116,7 @@ workplace/
         │   ├── reference.pptx
         │   └── data.xlsx
         ├── upload/
+        │   ├── events.xlsx
         │   ├── knowledge-001.md または knowledge-001.docx
         │   ├── knowledge-002.md または knowledge-002.docx
         │   ├── additional-guide.md または additional-guide.docx
@@ -121,6 +124,8 @@ workplace/
         │   ├── reference.pptx
         │   └── data.xlsx
         ├── work/
+        │   ├── json2xlsx-mappings/
+        │   │   └── events.mapping.json
         │   ├── knowledge-markdown/
         │   │   ├── knowledge-001.md
         │   │   └── knowledge-002.md
@@ -140,7 +145,8 @@ workplace/
 - `temp1/`など別の基準ディレクトリが利用者から指定された場合も、その下を`miku-ai-assistant-builder/YYYYMMDD-HHmm/`の形にする。
 
 - `manual-input/`: 人間が追加する原本を置く。第2段階でも変更、上書き、削除しない。
-- `upload/`: 選択形式の自動生成資料、手動Markdown、検証済みの準備済み資料を、最終登録候補としてフラットに置く。
+- `upload/`: JSON / JSONLから生成したXLSX、選択形式の自動生成資料、手動Markdown、検証済みの準備済み資料を、最終登録候補としてフラットに置く。
+- `work/json2xlsx-mappings/`: 人がレビューしCLIで検証したmapping v1を置く。登録しない。確定済み変換ジョブではSHA-256を固定する。
 - `work/knowledge-markdown/knowledge-NNN.md`: `miku-text-bundle --mode knowledge-source`が生成した中間成果物。GemのMarkdown選択では最終候補へコピーし、それ以外ではDOCXの変換元にする。
 - `work/knowledge-index.md`: 実行設定、元ファイル対応、スキップ、警告、marker、旧生成物候補を記録する。DOCX化・登録ともに行わない。
 - `work/preparation-status.md`: `awaiting-manual-input`または`finalized`の状態と、別セッションで再開するための情報を記録する。登録しない。
@@ -169,7 +175,7 @@ workplace/
 - 開始確認ゲートが完了するまで入力フォルダを棚卸しせず、自動処理対象を選定しない。
 - `manual-input/`内の人間管理原本を上書き、移動、削除しない。
 - 第1段階と第2段階を同じターンで続けて実行しない。
-- 第1段階では`miku-text-bundle`を実行せず、手動資料数が確定した第2段階で自動生成枠を計算してから実行する。
+- 第1段階では`miku-json2xlsx`のinspection、mapping作成、XLSX変換と`miku-text-bundle`を実行せず、手動資料数が確定した第2段階でmappingレビューと自動生成枠計算を行う。
 - Agent Builderでは人力資料を最大19件とし、自動生成Knowledge sourceを最低1件確保する。
 - Agent Builderでは最終`upload/`の登録候補を20件以内にする。Gemでは実画面で確認した上限を使う。
 - `preparation-status.md`が再開可能な状態であることを確認せず第2段階を実行しない。

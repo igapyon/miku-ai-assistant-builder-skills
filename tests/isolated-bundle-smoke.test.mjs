@@ -68,6 +68,14 @@ test("bundle installs directly under the agent home skills directory", () => {
       execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2xlsx-java-0.9.5.jar"), "--help"], { encoding: "utf8" }),
       /Usage:/
     );
+    assert.equal(
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-json2xlsx-0.4.1.mjs"), "--version"], { encoding: "utf8" }).trim(),
+      "miku-json2xlsx 0.4.1"
+    );
+    assert.match(
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-json2xlsx-0.4.1.mjs"), "--help"], { encoding: "utf8" }),
+      /miku-json2xlsx - beta local-first JSON \/ JSONL to XLSX converter/
+    );
 
     const runBase = path.resolve(agentHome, "smoke-output");
     const runResult = JSON.parse(execFileSync(process.execPath, [

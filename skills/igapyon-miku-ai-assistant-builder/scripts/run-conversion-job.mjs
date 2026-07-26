@@ -4,10 +4,14 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const SUPPORTED_COPY_EXTENSIONS = new Set([".docx", ".pptx", ".xlsx", ".pdf"]);
+const DEFAULT_DISCOVERY_EXCLUDE_DIRECTORIES = new Set([
+  ".git", ".codex", ".vscode", ".idea", "node_modules", "dist", "build",
+  "target", "coverage", "workplace", "tmp", "temp"
+]);
 
 function compareUtf16(left, right) {
   return left < right ? -1 : left > right ? 1 : 0;
@@ -31,6 +35,11 @@ function requireNonEmptyString(value, label) {
 
 function requirePositiveInteger(value, label) {
   if (!Number.isInteger(value) || value < 1) throw new Error(`${label} must be a positive integer`);
+  return value;
+}
+
+function requireNonNegativeInteger(value, label) {
+  if (!Number.isInteger(value) || value < 0) throw new Error(`${label} must be a non-negative integer`);
   return value;
 }
 
@@ -75,6 +84,40 @@ function assertSameSet(actual, expected, label) {
   }
 }
 
+function isExcludedDirectory(relativePath, excludedDirectories) {
+  const normalizedPath = toPosix(relativePath).replace(/\/+$/, "");
+  const segments = normalizedPath.split("/").filter(Boolean);
+  for (const excludedDirectory of excludedDirectories) {
+    const normalizedExcluded = toPosix(excludedDirectory).replace(/^\.\/|\/+$/g, "");
+    if (normalizedExcluded.includes("/")) {
+      if (normalizedPath === normalizedExcluded || normalizedPath.startsWith(`${normalizedExcluded}/`)) return true;
+    } else if (segments.includes(normalizedExcluded)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function listJsonSourceFiles(rootDirectory, additionalExcludedDirectories = []) {
+  const excludedDirectories = new Set([...DEFAULT_DISCOVERY_EXCLUDE_DIRECTORIES, ...additionalExcludedDirectories]);
+  const result = [];
+  function walk(directory) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((left, right) => compareUtf16(left.name, right.name))) {
+      const absolutePath = path.resolve(directory, entry.name);
+      const relativePath = toPosix(path.relative(rootDirectory, absolutePath));
+      if (entry.isSymbolicLink()) throw new Error(`symbolic links are not allowed in JSON workbook inputs: ${absolutePath}`);
+      if (entry.isDirectory()) {
+        if (!isExcludedDirectory(relativePath, excludedDirectories)) walk(absolutePath);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      if ([".json", ".jsonl"].includes(path.extname(entry.name).toLowerCase())) result.push(relativePath);
+    }
+  }
+  walk(rootDirectory);
+  return result.sort(compareUtf16);
+}
+
 function runtimeCommand(skillDirectory, family, backend) {
   if (family === "textBundle" && backend === "node") {
     return { command: process.execPath, prefix: [path.resolve(skillDirectory, "runtime/miku-text-bundle-1.6.0.mjs")] };
@@ -88,6 +131,9 @@ function runtimeCommand(skillDirectory, family, backend) {
   if (family === "md2docx" && backend === "java") {
     return { command: "java", prefix: ["-jar", path.resolve(skillDirectory, "runtime/miku-md2docx-java-1.0.1.jar")] };
   }
+  if (family === "json2xlsx" && backend === "node") {
+    return { command: process.execPath, prefix: [path.resolve(skillDirectory, "runtime/miku-json2xlsx-0.4.1.mjs")] };
+  }
   throw new Error(`unsupported ${family} backend: ${backend}`);
 }
 
@@ -100,6 +146,27 @@ function executeRuntime(runtime, args, options = {}) {
 
 function addRepeatedArguments(args, flag, values = []) {
   for (const value of values) args.push(flag, requireNonEmptyString(value, flag));
+}
+
+function executeStructuredRuntime(runtime, args, label) {
+  const execution = spawnSync(runtime.command, [...runtime.prefix, ...args], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  if (execution.error) throw execution.error;
+  let result;
+  try {
+    result = JSON.parse(execution.stdout);
+  } catch {
+    throw new Error(`${label} did not return valid JSON; exit=${execution.status}; stderr=${execution.stderr.trim()}`);
+  }
+  if (execution.status !== 0 || result?.status !== "success") {
+    const codes = Array.isArray(result?.diagnostics)
+      ? result.diagnostics.map((entry) => entry?.code).filter(Boolean).join(", ")
+      : "";
+    throw new Error(`${label} failed; exit=${execution.status}; diagnostics=${codes || "none"}; stderr=${execution.stderr.trim()}`);
+  }
+  return result;
 }
 
 function buildBundleArguments(plan, outputDirectory, dryRun) {
@@ -147,9 +214,7 @@ function validatePlan(rawPlan, planPath) {
   requireNonEmptyString(plan.skillDirectory, "skillDirectory");
   requireNonEmptyString(plan.sourceDirectory, "sourceDirectory");
   if (!fs.statSync(path.resolve(plan.sourceDirectory)).isDirectory()) throw new Error("sourceDirectory is not a directory");
-  if (!Array.isArray(plan.automaticInputPaths) || plan.automaticInputPaths.length === 0) {
-    throw new Error("automaticInputPaths must be a non-empty array");
-  }
+  if (!Array.isArray(plan.automaticInputPaths)) throw new Error("automaticInputPaths must be an array");
   plan.automaticInputPaths = plan.automaticInputPaths.map((entry, index) => requireSafeRelativePath(entry, `automaticInputPaths[${index}]`));
   assertUniqueCaseInsensitive(plan.automaticInputPaths, "automaticInputPaths");
   for (const relativePath of plan.automaticInputPaths) {
@@ -158,7 +223,13 @@ function validatePlan(rawPlan, planPath) {
       throw new Error(`automaticInputPaths must not include environment files: ${relativePath}`);
     }
   }
-  requirePositiveInteger(plan.automaticOutputCount, "automaticOutputCount");
+  requireNonNegativeInteger(plan.automaticOutputCount, "automaticOutputCount");
+  if (plan.automaticInputPaths.length === 0 && plan.automaticOutputCount !== 0) {
+    throw new Error("automaticOutputCount must be 0 when automaticInputPaths is empty");
+  }
+  if (plan.automaticInputPaths.length > 0 && plan.automaticOutputCount === 0) {
+    throw new Error("automaticOutputCount must be positive when automaticInputPaths is not empty");
+  }
   requirePositiveInteger(plan.totalFileLimit, "totalFileLimit");
   if (!Array.isArray(plan.manualInputs)) throw new Error("manualInputs must be an array");
   plan.manualInputs = plan.manualInputs.map((entry, index) => {
@@ -184,6 +255,63 @@ function validatePlan(rawPlan, planPath) {
   const planDirectory = path.dirname(planPath);
   const runDirectory = path.resolve(planDirectory, "..");
   if (path.basename(planDirectory) !== "work") throw new Error("conversion-plan.json must be inside the run work directory");
+  plan.jsonWorkbookInputs ??= [];
+  if (!Array.isArray(plan.jsonWorkbookInputs)) throw new Error("jsonWorkbookInputs must be an array");
+  plan.jsonWorkbookInputs = plan.jsonWorkbookInputs.map((entry, index) => {
+    requirePlainObject(entry, `jsonWorkbookInputs[${index}]`);
+    const relativePath = requireSafeRelativePath(entry.relativePath, `jsonWorkbookInputs[${index}].relativePath`);
+    if (![".json", ".jsonl"].includes(path.extname(relativePath).toLowerCase())) {
+      throw new Error(`JSON workbook input must end in .json or .jsonl: ${relativePath}`);
+    }
+    const sourcePath = path.resolve(plan.sourceDirectory, relativePath);
+    if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) {
+      throw new Error(`JSON workbook input is missing: ${relativePath}`);
+    }
+    const mappingPath = requireSafeRelativePath(entry.mappingPath, `jsonWorkbookInputs[${index}].mappingPath`);
+    const resolvedMappingPath = path.resolve(planDirectory, mappingPath);
+    if (!resolvedMappingPath.startsWith(`${path.resolve(planDirectory)}${path.sep}`)) {
+      throw new Error(`JSON workbook mapping must stay inside work/: ${mappingPath}`);
+    }
+    if (!fs.existsSync(resolvedMappingPath) || !fs.statSync(resolvedMappingPath).isFile()) {
+      throw new Error(`JSON workbook mapping is missing: ${mappingPath}`);
+    }
+    const mappingSha256 = requireNonEmptyString(entry.mappingSha256, `jsonWorkbookInputs[${index}].mappingSha256`).toLowerCase();
+    if (!/^[0-9a-f]{64}$/.test(mappingSha256)) throw new Error(`invalid mapping SHA-256: ${mappingSha256}`);
+    if (hashFile(resolvedMappingPath) !== mappingSha256) throw new Error(`JSON workbook mapping digest changed: ${mappingPath}`);
+    const outputBasename = path.basename(requireSafeRelativePath(entry.outputBasename, `jsonWorkbookInputs[${index}].outputBasename`));
+    if (path.extname(outputBasename).toLowerCase() !== ".xlsx") {
+      throw new Error(`JSON workbook output must end in .xlsx: ${outputBasename}`);
+    }
+    return { relativePath, mappingPath, mappingSha256, outputBasename };
+  });
+  assertUniqueCaseInsensitive(plan.jsonWorkbookInputs.map((entry) => entry.relativePath), "JSON workbook input path");
+  assertUniqueCaseInsensitive(plan.jsonWorkbookInputs.map((entry) => entry.mappingPath), "JSON workbook mapping path");
+  assertUniqueCaseInsensitive(plan.jsonWorkbookInputs.map((entry) => entry.outputBasename), "JSON workbook output basename");
+  const automaticPathSet = new Set(plan.automaticInputPaths.map((entry) => entry.toLocaleLowerCase("en-US")));
+  for (const entry of plan.jsonWorkbookInputs) {
+    if (automaticPathSet.has(entry.relativePath.toLocaleLowerCase("en-US"))) {
+      throw new Error(`input cannot be processed by both miku-text-bundle and miku-json2xlsx: ${entry.relativePath}`);
+    }
+  }
+  if (plan.automaticInputPaths.length === 0 && plan.jsonWorkbookInputs.length === 0) {
+    throw new Error("at least one automatic text or JSON workbook input is required");
+  }
+  if (plan.jsonWorkbookInputs.length > 0) {
+    const json2xlsx = requirePlainObject(plan.json2xlsx, "json2xlsx");
+    if ((json2xlsx.backend ?? "node") !== "node") throw new Error(`unsupported json2xlsx backend: ${json2xlsx.backend}`);
+    const bundle = requirePlainObject(plan.textBundle, "textBundle");
+    const excludedExtensions = new Set((bundle.addExcludeExtensions ?? []).map((entry) => entry.toLowerCase()));
+    for (const requiredExtension of [".json", ".jsonl"]) {
+      if (!excludedExtensions.has(requiredExtension)) {
+        throw new Error(`textBundle.addExcludeExtensions must include ${requiredExtension} when JSON workbooks are enabled`);
+      }
+    }
+    assertSameSet(
+      listJsonSourceFiles(path.resolve(plan.sourceDirectory), bundle.addExcludeDirectories ?? []),
+      plan.jsonWorkbookInputs.map((entry) => entry.relativePath),
+      "JSON workbook input file set"
+    );
+  }
   return { plan, runDirectory, planDirectory };
 }
 
@@ -202,6 +330,11 @@ function hashFile(filePath) {
 function validateDocx(filePath) {
   const buffer = fs.readFileSync(filePath);
   if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b) throw new Error(`invalid DOCX output: ${filePath}`);
+}
+
+function validateXlsx(filePath) {
+  const buffer = fs.readFileSync(filePath);
+  if (buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b) throw new Error(`invalid XLSX output: ${filePath}`);
 }
 
 function replaceTargetsAtomically(replacements, backupDirectory) {
@@ -237,15 +370,27 @@ export function runConversionPlan(planFilePath) {
   assertSameSet(actualManualPaths, plan.manualInputs.map((entry) => entry.relativePath), "manual-input file set");
 
   const automaticBasenames = expectedAutomaticBasenames(plan);
-  const finalBasenames = [...automaticBasenames, ...plan.manualInputs.map((entry) => entry.outputBasename)];
+  const jsonWorkbookBasenames = plan.jsonWorkbookInputs.map((entry) => entry.outputBasename);
+  const finalBasenames = [...automaticBasenames, ...jsonWorkbookBasenames, ...plan.manualInputs.map((entry) => entry.outputBasename)];
   assertUniqueCaseInsensitive(finalBasenames, "final output basename");
   if (finalBasenames.length > plan.totalFileLimit) {
     throw new Error(`final output count ${finalBasenames.length} exceeds limit ${plan.totalFileLimit}`);
   }
 
-  const textBundle = runtimeCommand(plan.skillDirectory, "textBundle", plan.textBundle.backend ?? "node");
-  executeRuntime(textBundle, ["--version"], { capture: true });
-  executeRuntime(textBundle, ["--help"], { capture: true });
+  const textBundle = plan.automaticInputPaths.length > 0
+    ? runtimeCommand(plan.skillDirectory, "textBundle", plan.textBundle.backend ?? "node")
+    : null;
+  if (textBundle) {
+    executeRuntime(textBundle, ["--version"], { capture: true });
+    executeRuntime(textBundle, ["--help"], { capture: true });
+  }
+  const json2xlsx = plan.jsonWorkbookInputs.length > 0
+    ? runtimeCommand(plan.skillDirectory, "json2xlsx", plan.json2xlsx?.backend ?? "node")
+    : null;
+  if (json2xlsx) {
+    executeRuntime(json2xlsx, ["--version"], { capture: true });
+    executeRuntime(json2xlsx, ["--help"], { capture: true });
+  }
   const md2docx = plan.knowledgeFormat === "docx" || plan.manualInputs.some((entry) => entry.kind === "markdown" && entry.outputBasename.endsWith(".docx"))
     ? runtimeCommand(plan.skillDirectory, "md2docx", plan.md2docx?.backend ?? "node")
     : null;
@@ -263,21 +408,31 @@ export function runConversionPlan(planFilePath) {
     const stagedUpload = path.resolve(stagingRoot, "upload");
     fs.mkdirSync(stagedUpload, { recursive: true });
 
-    executeRuntime(textBundle, buildBundleArguments(plan, bundleOutput, true));
-    executeRuntime(textBundle, buildBundleArguments(plan, bundleOutput, false));
-
     const indexBasename = `${plan.textBundle.filenamePrefix}-index.md`;
-    const generatedIndex = path.resolve(bundleOutput, indexBasename);
-    if (!fs.existsSync(generatedIndex)) throw new Error(`missing generated index: ${generatedIndex}`);
-    const indexText = fs.readFileSync(generatedIndex, "utf8");
-    assertSameSet(parseSourcePaths(indexText), plan.automaticInputPaths, "automatic input file set");
+    let generatedMarkdown = [];
+    if (textBundle) {
+      executeRuntime(textBundle, buildBundleArguments(plan, bundleOutput, true));
+      executeRuntime(textBundle, buildBundleArguments(plan, bundleOutput, false));
 
-    const generatedMarkdown = fs.readdirSync(bundleOutput)
-      .filter((name) => name.startsWith(`${plan.textBundle.filenamePrefix}-`) && name.endsWith(".md") && name !== indexBasename)
-      .sort(compareUtf16);
-    assertSameSet(generatedMarkdown, automaticBasenames.map((name) => name.replace(/\.docx$/, ".md")), "automatic output file set");
-    fs.renameSync(bundleOutput, stagedKnowledge);
-    fs.renameSync(path.resolve(stagedKnowledge, indexBasename), path.resolve(stagingRoot, "knowledge-index.md"));
+      const generatedIndex = path.resolve(bundleOutput, indexBasename);
+      if (!fs.existsSync(generatedIndex)) throw new Error(`missing generated index: ${generatedIndex}`);
+      const indexText = fs.readFileSync(generatedIndex, "utf8");
+      assertSameSet(parseSourcePaths(indexText), plan.automaticInputPaths, "automatic input file set");
+
+      generatedMarkdown = fs.readdirSync(bundleOutput)
+        .filter((name) => name.startsWith(`${plan.textBundle.filenamePrefix}-`) && name.endsWith(".md") && name !== indexBasename)
+        .sort(compareUtf16);
+      assertSameSet(generatedMarkdown, automaticBasenames.map((name) => name.replace(/\.docx$/, ".md")), "automatic output file set");
+      fs.renameSync(bundleOutput, stagedKnowledge);
+      fs.renameSync(path.resolve(stagedKnowledge, indexBasename), path.resolve(stagingRoot, "knowledge-index.md"));
+    } else {
+      fs.mkdirSync(stagedKnowledge, { recursive: true });
+      fs.writeFileSync(
+        path.resolve(stagingRoot, "knowledge-index.md"),
+        "# Knowledge Source Index\n\nNo miku-text-bundle outputs were generated for this conversion plan.\n",
+        "utf8"
+      );
+    }
 
     for (const markdownBasename of generatedMarkdown) {
       const input = path.resolve(stagedKnowledge, markdownBasename);
@@ -289,6 +444,35 @@ export function runConversionPlan(planFilePath) {
       } else {
         fs.copyFileSync(input, output);
       }
+    }
+
+    const jsonWorkbookResults = [];
+    for (const jsonInput of plan.jsonWorkbookInputs) {
+      const input = path.resolve(plan.sourceDirectory, jsonInput.relativePath);
+      const mapping = path.resolve(planDirectory, jsonInput.mappingPath);
+      const output = path.resolve(stagedUpload, jsonInput.outputBasename);
+      executeStructuredRuntime(
+        json2xlsx,
+        ["validate-mapping", "--mapping", mapping, "--result-format", "json"],
+        `miku-json2xlsx mapping validation for ${jsonInput.relativePath}`
+      );
+      const conversionResult = executeStructuredRuntime(
+        json2xlsx,
+        ["convert", "--input", input, "--output", output, "--mapping", mapping, "--result-format", "json"],
+        `miku-json2xlsx conversion for ${jsonInput.relativePath}`
+      );
+      const listedArtifact = conversionResult.artifacts?.some((artifact) =>
+        artifact?.kind === "xlsx" && path.resolve(artifact.path) === output
+      );
+      if (!listedArtifact) throw new Error(`miku-json2xlsx did not report the expected XLSX artifact: ${jsonInput.outputBasename}`);
+      validateXlsx(output);
+      jsonWorkbookResults.push({
+        relativePath: jsonInput.relativePath,
+        outputBasename: jsonInput.outputBasename,
+        warningCodes: (conversionResult.diagnostics ?? [])
+          .filter((entry) => entry?.severity === "warning")
+          .map((entry) => entry.code)
+      });
     }
 
     for (const manualInput of plan.manualInputs) {
@@ -316,8 +500,12 @@ export function runConversionPlan(planFilePath) {
     const result = {
       completedAt: new Date().toISOString(),
       host: os.hostname(),
-      automaticInputCount: plan.automaticInputPaths.length,
-      automaticOutputCount: automaticBasenames.length,
+      automaticInputCount: plan.automaticInputPaths.length + plan.jsonWorkbookInputs.length,
+      automaticOutputCount: automaticBasenames.length + jsonWorkbookBasenames.length,
+      textBundleInputCount: plan.automaticInputPaths.length,
+      textBundleOutputCount: automaticBasenames.length,
+      jsonWorkbookInputCount: plan.jsonWorkbookInputs.length,
+      jsonWorkbookResults,
       manualInputCount: plan.manualInputs.length,
       finalOutputCount: finalBasenames.length,
       finalBasenames
