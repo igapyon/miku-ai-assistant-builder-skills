@@ -18,7 +18,7 @@ Agent BuilderとGemでは機能、上限、検証条件が異なります。各�
 
 ## Knowledge利用上の注意
 
-本スキルが`miku-text-bundle`対応テキストを原則すべて自動処理対象にすることは、配備用Knowledgeファイルを準備する際の入力範囲を示します。配備後のAIアシスタントが、登録済みKnowledge内の全情報を常に検索・取得・参照できることや、回答へ必ず利用することを保証するものではありません。
+本スキルがJSON / JSONLを1入力1XLSX候補とし、それ以外の`miku-text-bundle`対応テキストを原則すべて自動処理対象にすることは、配備用Knowledgeファイルを準備する際の入力範囲を示します。配備後のAIアシスタントが、登録済みKnowledge内の全情報を常に検索・取得・参照できることや、回答へ必ず利用することを保証するものではありません。
 
 ファイルの登録成功やKnowledge一覧への表示だけでは、個々の情報があらゆる質問で取得されるとは限りません。利用者の権限、ライセンス、管理者設定に加え、質問との関連性判定、検索、オーケストレーション、コンテキスト上限などの影響を受けます。
 
@@ -31,16 +31,17 @@ Agent BuilderとGemでは機能、上限、検証条件が異なります。各�
 - `skills/igapyon-miku-ai-assistant-builder/`
 
 このスキルは、Knowledge source生成用の`miku-text-bundle`、DOCX生成用の
-`miku-md2docx`、複数シートXLSX生成用の`miku-md2xlsx`について、Node.js版と
-Java版のCLIランタイムを同梱するCLI-backed型です。
+`miku-md2docx`、JSON / JSONLからXLSXを生成する`miku-json2xlsx`、Markdownから
+複数シートXLSXを生成する`miku-md2xlsx`のCLIランタイムを同梱するCLI-backed型です。
 
 同梱ランタイムは次のとおりです。
 
 - `miku-text-bundle` Node.js v1.6.0 / Java v1.6.0
 - `miku-md2docx` Node.js v1.0.1 / Java v1.0.1
+- `miku-json2xlsx` Node.js v0.4.1（**Beta**）
 - `miku-md2xlsx` Node.js v0.9.5 / Java v0.9.5（Excelブック出力: **Experimental**）
 
-Excelブック出力は**Experimental**であり、既定の二段階変換にはまだ組み込まれていません。
+`miku-json2xlsx`は、承認済みmappingを固定し、1つのJSONまたはJSONL入力から1つのXLSXを生成する経路として二段階変換へ組み込みます。`miku-md2xlsx`によるMarkdownからのExcelブック出力は**Experimental**であり、既定の二段階変換には組み込まれていません。
 
 ## Build
 
@@ -67,10 +68,10 @@ ZIP は Agent home 直下へ展開する形式で、内部のスキルは `skill
 新規変換の開始時には、それ以前の会話で明示されていない限り、配備先がMicrosoft 365 Copilot Agent BuilderかGoogle Gemini Gem Classicか、入力元となる正確なフォルダと自動処理対象範囲はどこかを人に確認します。確認できるまで、入力フォルダの棚卸しや対象ファイルの選定、出力フォルダの作成を開始しません。人が質問に対して「特に指定なし」「おまかせ」と明示した項目だけは、その回答後に初めて、作業目的に合う狭い範囲の想定で補完します。
 
 1. 主対象のAgent Builder、またはGemを選び、Gemの場合はMarkdownのまま使うかDOCX化するかを選ぶ。
-2. 対象フォルダを棚卸しし、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定して、`manual-input/`への追加資料の準備待ちで停止する。
-3. スキルを再度起動し、対象サービスで利用可能なファイル枠に収まるよう、`miku-text-bundle --mode knowledge-source`の自動バンドル数を調整する。
-4. 確定した入力パス、手動資料、生成数、形式、basenameから、その実行専用の`work/conversion-plan.json`と`work/run-conversion.mjs`を作る。
-5. 初回からNode.jsランナーを実行して最終`upload/`を構成し、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を生成する。
+2. 対象フォルダを棚卸しし、JSON / JSONLは1入力1XLSXの候補、それ以外の`miku-text-bundle`対応テキストはバンドル候補として確定して、`manual-input/`への追加資料の準備待ちで停止する。
+3. スキルを再度起動し、JSON / JSONLを`inspect`してmapping案を人がレビューし、対象サービスのファイル枠からJSON workbook数と手動資料数を差し引いた残りへ`miku-text-bundle --mode knowledge-source`の自動バンドル数を収める。
+4. 確定した入力パス、mappingとSHA-256、手動資料、生成数、形式、basenameから、その実行専用の`work/conversion-plan.json`と`work/run-conversion.mjs`を作る。
+5. 初回からNode.jsランナーを実行し、各JSON / JSONLから1つのXLSXを生成して、他の自動資料と手動資料を合わせた最終`upload/`を構成する。Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を生成する。
 
 出力先の明示指定がなければ、新規変換ごとに次の日時付きディレクトリを作ります。
 
@@ -92,7 +93,7 @@ workplace/miku-ai-assistant-builder/YYYYMMDD-HHmm/
 node work/run-conversion.mjs
 ```
 
-ランナーは初回の第二段階でも使用したものです。原本と`manual-input/`の内容変更は許可しますが、ファイル構成や自動生成数が変わった場合は既存の正常な`upload/`を変更せず停止します。構成を変える場合は新しい日時付き実行ディレクトリで第1段階から実行します。内容更新後の正確性、機密性、権限、対象サービスの最新仕様、配備後の検索品質は、人またはAI Agentが改めて確認します。
+ランナーは初回の第二段階でも使用したものです。原本と`manual-input/`の内容変更は許可しますが、JSON mapping、ファイル構成、出力basename、自動生成数が変わった場合は既存の正常な`upload/`を変更せず停止します。mappingや構成を変える場合は新しい日時付き実行ディレクトリで第1段階から実行します。内容更新後の正確性、機密性、権限、対象サービスの最新仕様、配備後の検索品質は、人またはAI Agentが改めて確認します。
 
 手動追加資料の準備を依頼するときは、作成済み`manual-input/`の解決済みフルパスと出力先基準の相対パスを利用者へ示します。フルパスは人向けのローカル作業案内だけに使い、Knowledgeファイルには含めません。
 

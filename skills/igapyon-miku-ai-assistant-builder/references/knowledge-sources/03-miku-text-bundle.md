@@ -4,7 +4,7 @@
 
 雑多な入力フォルダからKnowledge sourcesの中間Markdownを生成するときは、本スキルに同梱した`miku-text-bundle`を使用する。上流`miku-text-bundle` v1.5.0以降の`knowledge-source`モードを前提にする。
 
-`miku-text-bundle`はテキスト系ファイルの収集、決定的な分割、出典追跡、診断を担当する。本スキルはAgent Builderへの適合性判断、安全上・技術上必要な除外、Instructions作成、登録候補の確認、配備用フォルダの構成を担当する。入力元にあるbundle対応テキストを内容の関連性、旧版、重複の推定だけで選別せず、原則すべて収集対象にする。
+`miku-text-bundle`はテキスト系ファイルの収集、決定的な分割、出典追跡、診断を担当する。本スキルはAgent Builderへの適合性判断、安全上・技術上必要な除外、Instructions作成、登録候補の確認、配備用フォルダの構成を担当する。入力元にあるbundle対応テキストを内容の関連性、旧版、重複の推定だけで選別せず、原則すべて収集対象にする。ただし、[miku-json2xlsx連携](08-miku-json2xlsx.md)で1入力1XLSXへ変換するJSON / JSONLは重複を避けるため収集対象から外す。
 
 ## 必須条件
 
@@ -14,6 +14,7 @@
 - 同梱ランタイムが未対応なら、handoffモードで代用せず更新が必要と報告する。
 - 入力ディレクトリ、出力ディレクトリ、文字コード、除外、サイズ上限を確認する。
 - `.env`と`.env.*`は必ず除外し、dry-runと本実行の収集対象に入れない。
+- JSON workbookを生成する実行では`--add-exclude-extension ".json"`と`--add-exclude-extension ".jsonl"`を指定し、同じ入力をXLSXとテキストバンドルの両方へ入れない。
 
 ## 標準実行
 
@@ -28,6 +29,8 @@ node <skill-root>/runtime/miku-text-bundle-1.6.0.mjs \
   --mode knowledge-source \
   --max-chars <calculatedMaxChars> \
   --max-input-file-bytes 200000000 \
+  --add-exclude-extension ".json" \
+  --add-exclude-extension ".jsonl" \
   --dry-run
 ```
 
@@ -40,6 +43,8 @@ java -jar <skill-root>/runtime/miku-text-bundle-java-1.6.0.jar \
   --mode knowledge-source \
   --max-chars <calculatedMaxChars> \
   --max-input-file-bytes 200000000 \
+  --add-exclude-extension ".json" \
+  --add-exclude-extension ".jsonl" \
   --dry-run
 ```
 

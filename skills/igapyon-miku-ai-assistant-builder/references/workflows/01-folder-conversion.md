@@ -2,7 +2,7 @@
 
 ## 目的
 
-文書、メモ、ソースコード、下書き、旧版などが混在するフォルダから、`miku-text-bundle`が扱えるテキスト系ファイルを原則すべて自動処理対象として確定したあと、人間が準備したMarkdownやOffice文書を追加し、主対象のMicrosoft 365 Copilot Agent BuilderまたはGoogle Gemini Gemへ設定しやすい単一の配備用フォルダへ統合する。対象サービスの仕様差に応じて同じ流れを使い分ける。
+文書、メモ、ソースコード、JSON / JSONL、下書き、旧版などが混在するフォルダから、JSON / JSONLを1入力1XLSX候補、それ以外の`miku-text-bundle`対応テキストをバンドル候補として確定したあと、人間が準備したMarkdownやOffice文書を追加し、主対象のMicrosoft 365 Copilot Agent BuilderまたはGoogle Gemini Gemへ設定しやすい単一の配備用フォルダへ統合する。対象サービスの仕様差に応じて同じ流れを使い分ける。
 
 これは専用インポート形式への変換ではない。Configure画面へコピーする入力値と、Knowledge sourcesとして登録する候補を人が確認できる受け渡し形式とする。
 
@@ -104,14 +104,14 @@ node <skill-directory>/scripts/create-run-directory.mjs --base-directory <output
 - `upload/`を変更する前に最終出力計画を確定する。途中失敗時に既存の正常な`upload/`を部分更新しない。
 - 第2段階の初回変換から、確定済み計画に基づく同じNode.jsランナーを使う。AI AgentがCLIの本実行を別経路で再現しない。
 
-## 第1段階: 自動テキスト入力の確定と準備待ち
+## 第1段階: 自動入力の確定と準備待ち
 
 1. 開始前確認を完了し、配備先、入力元、自動処理範囲を復唱する。その後、エージェントの目的、対象利用者、代表的な質問、正式資料、出力先を特定する。出力先の明示指定がなければ、前述の日時付き既定出力先を採用する。GemではMarkdownまたはDOCXも選ぶ。質問前に必須項目を仮定しない。利用者が明示的に委任した項目だけは、想定を列挙して補完する。
 2. ファイルの相対パス、形式、サイズ、更新日時、文字コード、読取可否を棚卸しする。
-3. `.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルを既定で`Auto include`へ分類する。内容の関連性、推定テーマ、旧版、重複候補だけを理由に対象を絞り込まない。
+3. 適格な`.json`と`.jsonl`を、同梱`miku-json2xlsx`で1入力1XLSXへ変換する`JSON workbook`へ分類する。その他の`.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルを既定で`Auto include`へ分類する。同じJSON / JSONLを両方へ重複投入しない。内容の関連性、推定テーマ、旧版、重複候補だけを理由に対象を絞り込まない。
 4. `.env`と`.env.*`、秘密情報、出力先、利用者が明示した除外、ランタイムが技術的に扱えないファイルだけを`Exclude`または`Confirm`へ分類し、理由を記録する。
 5. DOCX、PPTX、XLSX、PDF、画像などの非テキスト資料を自動変換せず、自動処理対象に含めない。必要なら、人が準備して`manual-input/`へ置く`Manual candidate`として記録する。この段階では分割数を確定せず、`miku-text-bundle`を実行しない。
-6. 空の`manual-input/`を作る。既存の`manual-input/`がある場合は内容を削除せず、新規変換として続行しない。
+6. 空の`manual-input/`と`work/json2xlsx-mappings/`を作る。既存の`manual-input/`またはmappingがある場合は内容を削除せず、新規変換として続行しない。
 7. `work/preparation-status.md`と`work/execution-record.md`を作り、状態を`awaiting-manual-input`にする。反復実行の場合は、両方に参照した前回記録のパスを記載する。
 8. 利用者へ`manual-input/`の解決済みフルパスと出力先基準の相対パス、追加可能な形式、対象サービスで確認したファイル上限、原本を変更しない規則、再開方法を伝える。Agent Builderでは人力資料は最大19件とする。
 9. 追加資料がない場合も利用者の明示的な確認を待ち、ここで停止する。
@@ -119,6 +119,7 @@ node <skill-directory>/scripts/create-run-directory.mjs --base-directory <output
 第1段階では次を行わない。
 
 - `miku-text-bundle`のdry-runと本実行
+- `miku-json2xlsx`のinspection、mapping作成、XLSX変換
 - 番号付きMarkdownの生成
 - 番号付きMarkdownのDOCX変換
 - `manual-input/`の資料変換またはコピー
@@ -144,11 +145,16 @@ node <skill-directory>/scripts/create-run-directory.mjs --base-directory <output
 - Time zone: [同梱スクリプトが返したtimeZone]
 - Text bundle runtime: [版とバックエンド]
 - Text bundle mode: knowledge-source
+- JSON workbook runtime: miku-json2xlsx 0.4.1 / Node.js
 - Filename prefix: [prefix]
 - Encoding: [文字コード]
 - Max input file bytes: [値]
 
-## Selected automatic inputs
+## Selected JSON workbook inputs
+
+- [JSON / JSONL相対パス、またはNone]
+
+## Selected automatic text inputs
 
 - [入力元基準の相対パス]
 
@@ -192,6 +198,7 @@ Place optional source files in manual-input/, then invoke this skill again with 
 - Official sources: [正式資料]
 - Text bundle runtime: [版とバックエンド]
 - Text bundle mode: knowledge-source
+- JSON workbook runtime: miku-json2xlsx 0.4.1 / Node.js
 - Filename prefix: [prefix]
 - Encoding: [文字コード]
 - Max input file bytes: [値]
@@ -202,7 +209,7 @@ Place optional source files in manual-input/, then invoke this skill again with 
 
 ## Execution results
 
-- [M、A、N、T、C、maxChars、生成数、最終basename。第1段階ではPending]
+- [M、J、A、N、T、C、maxChars、mapping SHA-256、生成数、最終basename。第1段階ではPending]
 
 ## Validation
 
@@ -250,31 +257,34 @@ Invoke this skill with this execution record as a reference. Confirm or change t
 2. 記録された入力元、出力先、自動処理対象、実行条件と、現在のファイルを照合する。欠落や差異は推測で補わず停止する。
 3. 利用者が追加資料の準備完了、または追加資料なしを明示していることを確認する。
 4. `manual-input/`を読み取り専用で棚卸しし、形式、サイズ、読取可否、機密性、パスワード保護を確認する。
-5. 手動Markdownを選択形式にかかわらず1件として数え、検証済みの準備済み文書と合わせた手動資料数`M`を確定する。Agent Builderで`M`が20以上なら、19件以下への削減を求めて停止する。Gemでは実画面で確認した上限を使う。
-6. 対象サービスで確認した総ファイル上限から自動生成枠`A`を求める。Agent Builderでは`A = 20 - M`とする。Gemでは20件を流用しない。選択済みの適格な自動入力ファイル数`N`が0なら停止し、目標自動出力数を`T = min(N, A)`とする。
-7. 選択済み自動入力の合計文字数`C`を求め、`maxChars = max(120000, ceil(C / T))`を初期値とする。120,000文字は運用上の下限であり、Microsoftの制限値ではない。
-8. 同梱`miku-text-bundle`をknowledge-sourceモードでdry-runする。収集件数が`N`と一致し、推定Knowledgeファイル数が`A`以下になるまで、対象条件の修正または`maxChars`の増加とdry-runを繰り返す。推定数が`A`未満でも、空き枠を埋めるための分割は行わない。このdry-runは計画確定用であり、最終成果物を生成しない。
-9. 次の最終basenameをすべて列挙し、重複がないことを変換やコピーの前に確認する。
+5. 各JSON / JSONLについて同梱`miku-json2xlsx inspect --result-format json`を実行する。inspection resultからmapping v1案を作り、sheet、column、型、JSON path、rootとchildの関係、追跡列、未採用path、materialな仮定、出力basenameを人へ示す。承認後に`work/json2xlsx-mappings/`へ保存し、`validate-mapping --result-format json`で検証する。承認前にXLSXへ変換しない。
+6. 手動Markdownを選択形式にかかわらず1件として数え、検証済みの準備済み文書と合わせた手動資料数`M`を確定する。承認済みmappingを持つJSON workbook数を`J`とする。Agent Builderで`M`が20以上なら、19件以下への削減を求めて停止する。Gemでは実画面で確認した上限を使う。
+7. 対象サービスで確認した総ファイル上限からテキストバンドル枠`A`を求める。Agent Builderでは`A = 20 - M - J`とする。Gemでは20件を流用しない。JSON / JSONLを除いた適格な自動テキスト入力数を`N`とし、`N > 0`なら目標テキスト出力数を`T = min(N, A)`とする。`N = 0`かつ`J > 0`なら`T = 0`として続行し、`N = 0`かつ`J = 0`なら停止する。`N > 0`かつ`A = 0`ならファイル枠の見直しを求めて停止する。
+8. `N > 0`なら選択済み自動テキスト入力の合計文字数`C`を求め、`maxChars = max(120000, ceil(C / T))`を初期値とする。120,000文字は運用上の下限であり、Microsoftの制限値ではない。`N = 0`なら`C`と`maxChars`の計算およびテキストバンドルを行わない。
+9. `N > 0`なら`.json`と`.jsonl`を追加除外して、同梱`miku-text-bundle`をknowledge-sourceモードでdry-runする。収集件数が`N`と一致し、推定Knowledgeファイル数が`A`以下になるまで、対象条件の修正または`maxChars`の増加とdry-runを繰り返す。推定数が`A`未満でも、空き枠を埋めるための分割は行わない。このdry-runは計画確定用であり、最終成果物を生成しない。
+10. 次の最終basenameをすべて列挙し、重複がないことを変換やコピーの前に確認する。
+    - JSON / JSONLごとの1つのXLSX basename
     - `work/knowledge-markdown/*.md`を選択形式でコピーまたはDOCX化したbasename
     - `manual-input/`のMarkdownを選択形式でコピーまたはDOCX化したbasename
     - 検証済みの準備済みOffice文書のbasename
-10. 競合、未対応形式、確認待ちがあれば`items-to-confirm.md`へ記録し、`upload/`を変更せず停止する。
-11. 状態を`finalizing`へ更新し、`M`、`A`、`N`、`T`、`C`、採用した`maxChars`、dry-run推定数、固定する自動生成数、最終basenameを記録する。
-12. [確定済み構成の再実行可能な変換ジョブ](02-repeatable-conversion-job.md)に従い、確認済みの自動入力相対パス集合、手動資料、形式、上限、CLI引数を`work/conversion-plan.json`へ作る。同梱`create-conversion-job.mjs`で計画を正規化し、`work/run-conversion.mjs`を生成する。
-13. `miku-text-bundle`と`miku-md2docx`をAI Agentが個別に本実行せず、生成した`work/run-conversion.mjs`を実行する。ランナーは一時出力で本実行し、MarkdownをコピーまたはDOCX変換し、準備済みOffice文書を一時的な出力場所へコピーしてハッシュ一致を確認する。構成検証に成功した場合だけ`work/knowledge-markdown/`、`work/knowledge-index.md`、`upload/`を一括更新する。
-14. ランナーの本実行生成数、Source Mapping、最終basename、成功履歴が計画と一致することを確認する。ランナーが構成差または生成数差を報告した場合は、既存`upload/`を維持して停止する。
-15. MarkdownまたはDOCXの開封可否、元相対パス、ファイル境界、リンク、秘密情報と、準備済み文書の読取可否を検証する。
-16. 自動生成物と手動資料を合わせた最終候補総数が、対象サービスで確認した上限以下であることを確認する。
-17. `upload/`の実在ファイルからKnowledge一覧を作り、Agent Builderでは`agent-builder-input.md`、GemではName、Description、Custom instructions、Knowledge、Items to confirmを持つ`gem-input.md`へbasenameだけを記載する。
-18. `upload/`の未参照ファイルと入力用Markdownの参照切れがないことを双方向に確認する。
-19. `items-to-confirm.md`を確定し、`preparation-status.md`と`execution-record.md`へ実行パラメータ、変換ジョブのパス、入力と出力の実績、検証結果を記録して状態を`finalized`へ更新する。
-20. 利用者へ`upload/`の登録候補、手動資料数、自動生成数、合計数、確認事項、内容更新時の`node work/run-conversion.mjs`を示す。
+11. 競合、未対応形式、確認待ちがあれば`items-to-confirm.md`へ記録し、`upload/`を変更せず停止する。
+12. 状態を`finalizing`へ更新し、`M`、`J`、`A`、`N`、`T`、`C`、採用した`maxChars`、mapping SHA-256、dry-run推定数、固定する自動生成数、最終basenameを記録する。
+13. [確定済み構成の再実行可能な変換ジョブ](02-repeatable-conversion-job.md)に従い、確認済みの自動テキスト入力、JSON入力とmapping、手動資料、形式、上限、CLI引数を`work/conversion-plan.json`へ作る。同梱`create-conversion-job.mjs`で計画を正規化し、`work/run-conversion.mjs`を生成する。
+14. `miku-json2xlsx`、`miku-text-bundle`、`miku-md2docx`をAI Agentが個別に本実行せず、生成した`work/run-conversion.mjs`を実行する。ランナーは一時出力でJSON / JSONLを1入力1XLSXへ変換し、必要なテキストバンドル本実行、MarkdownのコピーまたはDOCX変換、準備済みOffice文書の一時コピーとハッシュ確認を行う。構成検証に成功した場合だけ`work/knowledge-markdown/`、`work/knowledge-index.md`、`upload/`を一括更新する。
+15. ランナーのJSON workbook数、warning code、テキスト本実行生成数、Source Mapping、最終basename、成功履歴が計画と一致することを確認する。ランナーが入力集合、mapping SHA-256、構成、生成数の差を報告した場合は、既存`upload/`を維持して停止する。
+16. XLSXの開封可否、READMEデータ辞書、sheet、column、追跡列、元JSON / JSONLとの対応を確認する。MarkdownまたはDOCXの開封可否、元相対パス、ファイル境界、リンク、秘密情報と、準備済み文書の読取可否も検証する。
+17. 自動生成物と手動資料を合わせた最終候補総数が、対象サービスで確認した上限以下であることを確認する。
+18. `upload/`の実在ファイルからKnowledge一覧を作り、Agent Builderでは`agent-builder-input.md`、GemではName、Description、Custom instructions、Knowledge、Items to confirmを持つ`gem-input.md`へbasenameだけを記載する。
+19. `upload/`の未参照ファイルと入力用Markdownの参照切れがないことを双方向に確認する。
+20. `items-to-confirm.md`を確定し、`preparation-status.md`と`execution-record.md`へ実行パラメータ、変換ジョブのパス、入力と出力の実績、検証結果を記録して状態を`finalized`へ更新する。
+21. 利用者へ`upload/`の登録候補、手動資料数、JSON workbook数、テキストバンドル数、合計数、確認事項、内容更新時の`node work/run-conversion.mjs`を示す。
 
 ## 分類
 
 | Classification | Meaning |
 |---|---|
-| Auto include | `miku-text-bundle`が扱えるテキスト系ファイル。原則すべてknowledge-sourceモードの入力に含める |
+| JSON workbook | 適格なJSON / JSONL。レビュー済みmappingで1入力1XLSXへ変換し、`miku-text-bundle`へ重複投入しない |
+| Auto include | JSON / JSONLを除く`miku-text-bundle`対応テキスト系ファイル。原則すべてknowledge-sourceモードの入力に含める |
 | Manual candidate | 自動処理しない非テキスト資料。必要なら人が準備して`manual-input/`へ置く |
 | Exclude | `.env`、`.env.*`、秘密情報、出力先、明示的除外、技術的に処理不能なファイルなど、理由を記録して除外する |
 | Confirm | 機密性、権限、読取可否、手動資料としての採否など、人の判断を待つ |
@@ -290,6 +300,7 @@ Invoke this skill with this execution record as a reference. Confirm or change t
 
 - 第1段階が`awaiting-manual-input`で停止し、同じターンで第2段階へ進んでいない。
 - 第1段階では自動処理対象だけが確定し、`miku-text-bundle`がまだ実行されていない。
+- 第1段階では`miku-json2xlsx`のinspection、mapping作成、XLSX変換もまだ実行されていない。
 - `preparation-status.md`から別セッションで再開できる。
 - `execution-record.md`に今回の指定内容と実績が残り、次回はそれを参考に新しい日時付き実行ディレクトリで開始できる。
 - 第2段階で`work/conversion-plan.json`と`work/run-conversion.mjs`が生成され、初回変換もそのランナーで成功している。
@@ -301,9 +312,10 @@ Invoke this skill with this execution record as a reference. Confirm or change t
 - Knowledge sources欄が`upload/`に実在するbasenameだけを使う。
 - `upload/`が登録候補だけのフラット構成になっている。
 - 自動生成Markdownと手動Markdownが選択どおりMarkdownのまま配置されるか、対応するDOCXへ変換されている。
+- JSON / JSONLごとに承認済みmappingとSHA-256が固定され、1入力1XLSXが生成されている。
 - 検証済みの準備済みOffice文書がbasenameを維持している。
 - Agent Builderでは手動資料が19件以下で、自動生成Knowledge sourceが最低1件ある。
-- Agent Builderでは自動生成数が`A = 20 - M`以下で、最終登録候補総数が20以下である。Gemでは実画面で確認した上限以下である。
+- Agent Builderではテキストバンドル数が`A = 20 - M - J`以下で、JSON workbook、テキストバンドル、手動資料を合わせた最終登録候補総数が20以下である。Gemでは実画面で確認した上限以下である。
 - `N`が自動生成枠より少ない場合、空き枠を埋めるための不要な分割をしていない。
 - 中間Markdown、管理用index、状態ファイルが`work/`へ分離されている。
 - InstructionsとKnowledge sourcesが混在していない。
