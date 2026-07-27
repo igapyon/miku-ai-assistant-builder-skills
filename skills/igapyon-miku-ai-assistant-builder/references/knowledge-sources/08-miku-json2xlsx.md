@@ -2,17 +2,17 @@
 
 ## 位置づけ
 
-入力元にJSONまたはJSONLがある場合は、同梱`miku-json2xlsx` v0.4.1を使い、1入力ファイルにつき1つのXLSXをKnowledge source候補として生成する。JSON / JSONLからXLSXへの変換意味、mapping schema、型、安全対策、Excel上限、diagnosticは上流`miku-json2xlsx`が所有し、本スキルで再実装しない。
+入力元にJSONまたはJSONLがある場合は、同梱`miku-json2xlsx` v0.4.2を使い、1入力ファイルにつき1つのXLSXをKnowledge source候補として生成する。JSON / JSONLからXLSXへの変換意味、mapping schema、型、安全対策、Excel上限、diagnosticは上流`miku-json2xlsx`が所有し、本スキルで再実装しない。
 
-`miku-json2xlsx` v0.4.1はベータ版である。元JSON / JSONLと承認済みmappingを保持し、生成XLSXを人またはAI Agentが確認してから登録する。
+`miku-json2xlsx` v0.4.2はベータ版である。元JSON / JSONLと承認済みmappingを保持し、生成XLSXを人またはAI Agentが確認してから登録する。
 
 ## 同梱ランタイム
 
 - 上流: <https://github.com/igapyon/miku-json2xlsx>
-- release: `v0.4.1`
-- executable: `runtime/miku-json2xlsx-0.4.1.mjs`
+- release: `v0.4.2`
+- executable: `runtime/miku-json2xlsx-0.4.2.mjs`
 - backend: Node.jsのみ
-- SHA-256: `6160dba0563b97452a38b34359e31aceffe3f662f0ec36bc398523e5737d2dc2`
+- SHA-256: `969e74f65c8f8cdb30e9ab067d43eeb5138f208b3e79f1ca4006e9511b5c4251`
 
 実行前に`--version`と完全な`--help`を確認する。Java版、MCP、Skill内独自変換、別の汎用XLSX実装へ暗黙に切り替えない。
 
@@ -24,7 +24,9 @@
 
 ## mappingレビュー
 
-CLIはmappingを自動推論または承認しない。第2段階で各入力について次を行う。
+上流v0.4.2は、`convert`で`--mapping`を省略した場合に決定的な自動mappingを生成し、任意の`--mapping-output`へ保存できる。ただし、本スキルはその自動mappingを無レビューの変換契約として採用しない。自動mappingはAIによる推論ではないが、列、型、未採用構造、利用目的への適合性を人が確認する安全境界の代わりにはしない。
+
+本スキルの第2段階では、従来どおり各入力について次を行う。
 
 1. `inspect --result-format json`を実行し、入力種別、調査範囲、path、型候補、欠損、null、配列、sampleを確認する。
 2. inspection resultと利用目的からmapping v1案を作る。
@@ -91,9 +93,10 @@ mappingを変更した場合は同じ確定済み変換ジョブの内容更新�
 
 内容更新後にmappingと一致しない型や未知pathが現れた場合は、上流diagnosticを確認する。mappingの変更が必要なら、既存計画を手編集して迂回せず新規変換にする。
 
-## 上流v0.4.1の主な制約
+## 上流v0.4.2の主な制約
 
 - JSON配列と単一objectは入力全体を読み込み、JSONLは逐次処理する。
+- 自動mappingはファイル入力だけで利用でき、配列を`json`型の列として保持する。本スキルの確定済み変換ジョブは自動mappingを使用せず、常にレビュー済みの`--mapping`を渡す。
 - child sheetはroot直下で、path末尾の1つの`[]`を扱う。
 - `string`、`number`、`boolean`、`datetime`、`json`型を扱う。
 - 1 sheetあたり1,048,576行、16,384列、1 cellあたり32,767 UTF-16 code unitを超えると停止する。

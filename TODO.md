@@ -71,4 +71,4 @@
 - [x] `miku-text-bundle` v1.5.0で追加されたKnowledge sourceモードの契約を整理する。
 - [x] 上流へ依頼した変更内容と受け入れ条件が実装済みであることを確認する。
 - [x] `miku-text-bundle` v1.5.0以降を利用する案内・連携方法を設計する。
-- [x] `miku-json2xlsx` v0.4.1を同梱し、レビュー済みmappingによるJSON / JSONLの1入力1XLSX変換を再実行可能な変換ジョブへ統合する。
+- [x] `miku-json2xlsx` v0.4.2を同梱し、レビュー済みの明示mappingによるJSON / JSONLの1入力1XLSX変換を再実行可能な変換ジョブへ統合する。上流の自動mappingは無レビューの変換契約として採用しない。

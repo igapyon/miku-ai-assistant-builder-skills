@@ -145,7 +145,7 @@ node <skill-directory>/scripts/create-run-directory.mjs --base-directory <output
 - Time zone: [同梱スクリプトが返したtimeZone]
 - Text bundle runtime: [版とバックエンド]
 - Text bundle mode: knowledge-source
-- JSON workbook runtime: miku-json2xlsx 0.4.1 / Node.js
+- JSON workbook runtime: miku-json2xlsx 0.4.2 / Node.js
 - Filename prefix: [prefix]
 - Encoding: [文字コード]
 - Max input file bytes: [値]
@@ -198,7 +198,7 @@ Place optional source files in manual-input/, then invoke this skill again with 
 - Official sources: [正式資料]
 - Text bundle runtime: [版とバックエンド]
 - Text bundle mode: knowledge-source
-- JSON workbook runtime: miku-json2xlsx 0.4.1 / Node.js
+- JSON workbook runtime: miku-json2xlsx 0.4.2 / Node.js
 - Filename prefix: [prefix]
 - Encoding: [文字コード]
 - Max input file bytes: [値]

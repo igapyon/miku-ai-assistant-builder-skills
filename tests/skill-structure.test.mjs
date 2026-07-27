@@ -37,7 +37,7 @@ test("generated index is required and current", () => {
     "runtime/miku-md2docx-java-1.0.1.jar",
     "runtime/miku-md2xlsx-0.9.5.mjs",
     "runtime/miku-md2xlsx-java-0.9.5.jar",
-    "runtime/miku-json2xlsx-0.4.1.mjs",
+    "runtime/miku-json2xlsx-0.4.2.mjs",
     "runtime/miku-text-bundle-1.6.0.mjs",
     "runtime/miku-text-bundle-java-1.6.0.jar"
   ]) assert.ok(paths.includes(requiredPath), `index lacks ${requiredPath}`);
@@ -82,10 +82,10 @@ test("bundled runtimes match declared versions and digests", () => {
       sha256: "1edec76192c260bfb89a951a7f7a74e5daede77c3f478668ad0ca6babe44c58f"
     },
     {
-      file: "miku-json2xlsx-0.4.1.mjs",
+      file: "miku-json2xlsx-0.4.2.mjs",
       command: process.execPath,
-      version: "miku-json2xlsx 0.4.1",
-      sha256: "6160dba0563b97452a38b34359e31aceffe3f662f0ec36bc398523e5737d2dc2"
+      version: "miku-json2xlsx 0.4.2",
+      sha256: "969e74f65c8f8cdb30e9ab067d43eeb5138f208b3e79f1ca4006e9511b5c4251"
     }
   ];
 
@@ -135,6 +135,7 @@ test("JSON and JSONL use reviewed one-input-one-workbook conversion", () => {
   assert.match(skillMd, /mapping.*人がレビュー/s);
   assert.match(json2xlsxReference, /mappingSha256/);
   assert.match(json2xlsxReference, /miku-text-bundle.*重複/s);
+  assert.match(json2xlsxReference, /自動mapping.*無レビューの変換契約として採用しない/s);
   assert.match(repeatableJob, /jsonWorkbookInputs/);
 });
 
