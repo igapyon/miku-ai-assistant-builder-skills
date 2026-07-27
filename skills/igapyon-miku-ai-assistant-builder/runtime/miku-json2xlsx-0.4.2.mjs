@@ -3,7 +3,7 @@
 // package.json
 var package_default = {
   name: "miku-json2xlsx",
-  version: "0.4.1",
+  version: "0.4.2",
   private: true,
   description: "Local-first deterministic JSON and JSONL to XLSX conversion CLI.",
   type: "module",
@@ -98,6 +98,136 @@ function writeInspectionText(report, source, io) {
     }
     io.stdout.write("\n");
   }
+}
+
+// src/ts/auto-mapping.ts
+var PROPERTY_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+var EXCEL_MAX_COLUMNS = 16384;
+function observedType(value) {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  return typeof value;
+}
+function inferredType(types) {
+  const nonNull = [...types].filter((type) => type !== "null");
+  if (nonNull.length === 1) {
+    if (nonNull[0] === "boolean") return "boolean";
+    if (nonNull[0] === "number") return "number";
+    if (nonNull[0] === "string") return "string";
+  }
+  return "json";
+}
+function uniqueTrackingName(base, columnNames) {
+  let candidate = base;
+  while (columnNames.has(candidate)) candidate = `_${candidate}`;
+  return candidate;
+}
+async function generateAutoMapping(records) {
+  const observations = /* @__PURE__ */ new Map();
+  const invalidPaths = /* @__PURE__ */ new Set();
+  let recordsScanned = 0;
+  const observe = (path, value, candidate) => {
+    const current = observations.get(path) ?? { candidate: false, types: /* @__PURE__ */ new Set() };
+    current.candidate ||= candidate;
+    current.types.add(observedType(value));
+    observations.set(path, current);
+  };
+  const visit = (value, path, depth) => {
+    const type = observedType(value);
+    observe(path, value, depth === 1 || type !== "object" && depth > 1);
+    if (type !== "object") return;
+    for (const key of Object.keys(value).sort()) {
+      const childPath2 = `${path}.${key}`;
+      if (!PROPERTY_NAME.test(key)) {
+        invalidPaths.add(childPath2);
+        continue;
+      }
+      visit(value[key], childPath2, depth + 1);
+    }
+  };
+  for await (const record of records) {
+    recordsScanned += 1;
+    if (record.value === null || typeof record.value !== "object" || Array.isArray(record.value)) {
+      return {
+        status: "failure",
+        diagnostics: [{
+          code: "AUTO_MAPPING_RECORD_OBJECT_REQUIRED",
+          message: "Automatic mapping requires every input record to be a JSON object.",
+          severity: "error",
+          source: { recordNumber: record.recordNumber, line: record.inputLine }
+        }],
+        recordsScanned
+      };
+    }
+    for (const key of Object.keys(record.value).sort()) {
+      const path = `$.${key}`;
+      if (!PROPERTY_NAME.test(key)) {
+        invalidPaths.add(path);
+        continue;
+      }
+      visit(record.value[key], path, 1);
+    }
+  }
+  if (invalidPaths.size > 0) {
+    return {
+      status: "failure",
+      diagnostics: [...invalidPaths].sort().map((path) => ({
+        code: "AUTO_MAPPING_UNSUPPORTED_PROPERTY_NAME",
+        message: `Automatic mapping cannot represent this property name in mapping v1: ${path}`,
+        severity: "error",
+        source: { jsonPath: path }
+      })),
+      recordsScanned
+    };
+  }
+  const columns = [...observations.entries()].filter(([, observation]) => observation.candidate).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0).map(([sourcePath, observation]) => ({
+    name: sourcePath.slice(2),
+    sourcePath,
+    type: inferredType(observation.types)
+  }));
+  if (columns.length === 0) {
+    return {
+      status: "failure",
+      diagnostics: [{
+        code: "AUTO_MAPPING_NO_COLUMNS",
+        message: "Automatic mapping did not find any JSON properties to convert.",
+        severity: "error"
+      }],
+      recordsScanned
+    };
+  }
+  if (columns.length + 2 > EXCEL_MAX_COLUMNS) {
+    return {
+      status: "failure",
+      diagnostics: [{
+        code: "EXCEL_COLUMN_LIMIT",
+        message: `Automatic mapping found ${columns.length} data columns, exceeding Excel's ${EXCEL_MAX_COLUMNS}-column limit with tracking columns.`,
+        severity: "error",
+        source: { sheet: "Records" }
+      }],
+      recordsScanned
+    };
+  }
+  const columnNames = new Set(columns.map((column) => column.name));
+  const recordIdColumn = uniqueTrackingName("record_id", columnNames);
+  columnNames.add(recordIdColumn);
+  const sourceRecordColumn = uniqueTrackingName("source_record", columnNames);
+  return {
+    status: "success",
+    mapping: {
+      schemaVersion: 1,
+      sheets: [{
+        name: "Records",
+        kind: "root",
+        sourcePath: "$",
+        columns,
+        recordIdColumn,
+        sourceRecordColumn
+      }]
+    },
+    diagnostics: [],
+    recordsScanned
+  };
 }
 
 // src/ts/stored-zip.ts
@@ -587,7 +717,7 @@ function createWorkbookCoverSheet(mapping, metadata = {}) {
 
 // src/ts/converter.ts
 var EXCEL_MAX_ROWS = 1048576;
-var EXCEL_MAX_COLUMNS = 16384;
+var EXCEL_MAX_COLUMNS2 = 16384;
 var EXCEL_MAX_CELL_TEXT = 32767;
 function valueAtPath(value, path) {
   if (path === "$") return value;
@@ -853,10 +983,10 @@ function convertRecordsToXlsx(records, mapping, options = {}) {
   }
   for (const sheet of sheets) {
     const columnCount = Math.max(0, ...sheet.rows.map((row) => row.length));
-    if (columnCount > EXCEL_MAX_COLUMNS) {
+    if (columnCount > EXCEL_MAX_COLUMNS2) {
       diagnostics.push({
         code: "EXCEL_COLUMN_LIMIT",
-        message: `Sheet ${sheet.name} exceeds Excel's ${EXCEL_MAX_COLUMNS}-column limit.`,
+        message: `Sheet ${sheet.name} exceeds Excel's ${EXCEL_MAX_COLUMNS2}-column limit.`,
         severity: "error",
         source: { sheet: sheet.name }
       });
@@ -1708,29 +1838,127 @@ async function outputExists(path) {
     return false;
   }
 }
-async function runConvert(options, io) {
-  let mappingText;
+async function publishPreparedFiles(files, overwrite) {
+  const backups = [];
+  const published = [];
+  const transactionId = `${Date.now()}-${process.pid}`;
   try {
-    mappingText = await readFile2(options.mapping, "utf8");
+    for (const [index, file] of files.entries()) {
+      if (!await outputExists(file.targetPath)) continue;
+      if (!overwrite) throw new Error(`Output already exists: ${file.targetPath}`);
+      const backupPath = join2(
+        dirname(file.targetPath),
+        `.${basename(file.targetPath)}.${transactionId}-${index}.backup`
+      );
+      await rename(file.targetPath, backupPath);
+      backups.push({ backupPath, targetPath: file.targetPath });
+    }
+    for (const file of files) {
+      await rename(file.temporaryPath, file.targetPath);
+      published.push(file.targetPath);
+    }
   } catch (error) {
-    return writeExpectedFailure({ status: "failure", command: "convert", diagnostics: [{ code: "MAPPING_READ_ERROR", message: error instanceof Error ? error.message : "Unable to read mapping file.", severity: "error", source: { input: options.mapping } }], artifacts: [] }, options.resultFormat, io);
+    for (const targetPath of [...published].reverse()) {
+      await unlink(targetPath).catch(() => void 0);
+    }
+    for (const backup of [...backups].reverse()) {
+      await rename(backup.backupPath, backup.targetPath).catch(() => void 0);
+    }
+    throw error;
   }
-  const validation = parseAndValidateMapping(mappingText);
-  if (validation.status === "failure" || !validation.mapping) {
-    return writeExpectedFailure({ status: "failure", command: "convert", diagnostics: validation.diagnostics.map((diagnostic2) => ({ ...diagnostic2, source: { input: options.mapping, ...diagnostic2.source } })), artifacts: [] }, options.resultFormat, io);
+  for (const backup of backups) {
+    await unlink(backup.backupPath).catch(() => void 0);
   }
-  if (!options.overwrite && await outputExists(options.output)) {
-    return writeExpectedFailure({ status: "failure", command: "convert", diagnostics: [{ code: "OUTPUT_EXISTS", message: `Output already exists: ${options.output}. Use --overwrite to replace it.`, severity: "error", source: { input: options.output } }], artifacts: [] }, options.resultFormat, io);
+}
+function mappingFailure(diagnostics) {
+  return {
+    status: "failure",
+    result: {
+      status: "failure",
+      command: "convert",
+      diagnostics,
+      artifacts: []
+    }
+  };
+}
+async function resolveConversionMapping(options, streaming) {
+  if (options.mapping) {
+    const mappingPath = options.mapping;
+    let mappingText;
+    try {
+      mappingText = await readFile2(mappingPath, "utf8");
+    } catch (error) {
+      return mappingFailure([{
+        code: "MAPPING_READ_ERROR",
+        message: error instanceof Error ? error.message : "Unable to read mapping file.",
+        severity: "error",
+        source: { input: mappingPath }
+      }]);
+    }
+    const validation = parseAndValidateMapping(mappingText);
+    if (validation.status === "failure" || !validation.mapping) {
+      return mappingFailure(validation.diagnostics.map((diagnostic2) => ({
+        ...diagnostic2,
+        source: { input: mappingPath, ...diagnostic2.source }
+      })));
+    }
+    return {
+      status: "success",
+      mapping: validation.mapping,
+      mappingMode: "explicit",
+      mappingFileName: basename(mappingPath)
+    };
+  }
+  if (streaming) {
+    const generated2 = await generateAutoMapping(readJsonlRecordsFromFile(options.input));
+    if (generated2.status === "failure" || !generated2.mapping) {
+      return mappingFailure(generated2.diagnostics);
+    }
+    return {
+      status: "success",
+      mapping: generated2.mapping,
+      mappingMode: "auto",
+      mappingFileName: options.mappingOutput ? basename(options.mappingOutput) : "auto-generated"
+    };
+  }
+  const readOptions = options.inputFormat === void 0 ? {} : { format: options.inputFormat };
+  const bufferedInput = await readRecordsFromFileWithFormat(options.input, readOptions);
+  const generated = await generateAutoMapping(bufferedInput.records);
+  if (generated.status === "failure" || !generated.mapping) {
+    return mappingFailure(generated.diagnostics);
+  }
+  return {
+    status: "success",
+    mapping: generated.mapping,
+    mappingMode: "auto",
+    mappingFileName: options.mappingOutput ? basename(options.mappingOutput) : "auto-generated",
+    bufferedInput
+  };
+}
+async function runConvert(options, io) {
+  for (const outputPath of [options.output, options.mappingOutput].filter(
+    (path) => path !== void 0
+  )) {
+    if (!options.overwrite && await outputExists(outputPath)) {
+      return writeExpectedFailure({ status: "failure", command: "convert", diagnostics: [{ code: "OUTPUT_EXISTS", message: `Output already exists: ${outputPath}. Use --overwrite to replace it.`, severity: "error", source: { input: outputPath } }], artifacts: [] }, options.resultFormat, io);
+    }
   }
   const temporaryPath = join2(dirname(options.output), `.${Date.now()}-${process.pid}.miku-json2xlsx.tmp`);
+  const mappingTemporaryPath = options.mappingOutput ? join2(dirname(options.mappingOutput), `.${Date.now()}-${process.pid}.miku-json2xlsx-mapping.tmp`) : void 0;
   const streaming = options.inputFormat === "jsonl" || options.inputFormat === void 0 && options.input !== "-" && options.input.toLowerCase().endsWith(".jsonl");
   let conversionDetails = {};
   const sourceFileName = options.input === "-" ? "stdin" : basename(options.input);
-  const mappingFileName = basename(options.mapping);
+  let mappingMode = options.mapping ? "explicit" : "auto";
   try {
+    const resolved = await resolveConversionMapping(options, streaming);
+    if (resolved.status === "failure") {
+      return writeExpectedFailure(resolved.result, options.resultFormat, io);
+    }
+    const { mapping, mappingFileName } = resolved;
+    mappingMode = resolved.mappingMode;
     if (streaming) {
       const records = options.input === "-" ? readJsonlRecordsFromStream(process.stdin) : readJsonlRecordsFromFile(options.input);
-      const conversion = await convertJsonlStreamToXlsxFile(records, validation.mapping, temporaryPath, {
+      const conversion = await convertJsonlStreamToXlsxFile(records, mapping, temporaryPath, {
         progressInterval: options.progressInterval,
         onProgress: (count) => io.stderr.write(`progress: ${count} records processed
 `),
@@ -1752,8 +1980,8 @@ async function runConvert(options, io) {
       };
     } else {
       const readOptions = options.inputFormat === void 0 ? {} : { format: options.inputFormat };
-      const input = options.input === "-" ? await readRecordsFromStdinWithFormat(process.stdin, readOptions) : await readRecordsFromFileWithFormat(options.input, readOptions);
-      const conversion = convertRecordsToXlsx(input.records, validation.mapping, {
+      const input = resolved.bufferedInput ?? (options.input === "-" ? await readRecordsFromStdinWithFormat(process.stdin, readOptions) : await readRecordsFromFileWithFormat(options.input, readOptions));
+      const conversion = convertRecordsToXlsx(input.records, mapping, {
         workbookMetadata: {
           sourceFileName,
           sourceFormat: input.format === "jsonl" ? "JSONL" : "JSON",
@@ -1766,9 +1994,20 @@ async function runConvert(options, io) {
       await writeFile(temporaryPath, conversion.xlsx);
       conversionDetails = { diagnostics: conversion.diagnostics };
     }
-    await rename(temporaryPath, options.output);
+    const preparedFiles = [];
+    if (options.mappingOutput && mappingTemporaryPath) {
+      await writeFile(mappingTemporaryPath, `${JSON.stringify(mapping, null, 2)}
+`, "utf8");
+      preparedFiles.push({
+        temporaryPath: mappingTemporaryPath,
+        targetPath: options.mappingOutput
+      });
+    }
+    preparedFiles.push({ temporaryPath, targetPath: options.output });
+    await publishPreparedFiles(preparedFiles, options.overwrite);
   } catch (error) {
     await unlink(temporaryPath).catch(() => void 0);
+    if (mappingTemporaryPath) await unlink(mappingTemporaryPath).catch(() => void 0);
     const diagnostic2 = error instanceof InputParseError ? { code: "INPUT_PARSE_ERROR", message: error.message, severity: "error", source: { input: error.sourceName, line: error.line } } : { code: streaming ? "STREAM_CONVERSION_ERROR" : "INPUT_READ_ERROR", message: error instanceof Error ? error.message : "Unable to complete conversion.", severity: "error", source: { input: options.input } };
     return writeExpectedFailure({ status: "failure", command: "convert", diagnostics: [diagnostic2], artifacts: [] }, options.resultFormat, io);
   }
@@ -1776,7 +2015,11 @@ async function runConvert(options, io) {
     status: "success",
     command: "convert",
     diagnostics: conversionDetails.diagnostics,
-    artifacts: [{ kind: "xlsx", path: options.output }],
+    artifacts: [
+      { kind: "xlsx", path: options.output },
+      ...options.mappingOutput ? [{ kind: "mapping", path: options.mappingOutput }] : []
+    ],
+    mappingMode,
     ...streaming ? {
       inputMode: conversionDetails.inputMode,
       recordsProcessed: conversionDetails.recordsProcessed,
@@ -1799,7 +2042,7 @@ var HELP_TEXT = `miku-json2xlsx - beta local-first JSON / JSONL to XLSX converte
 Usage:
   miku-json2xlsx inspect --input <path|-> [options]
   miku-json2xlsx validate-mapping --mapping <path> [options]
-  miku-json2xlsx convert --input <path|-> --output <path.xlsx> --mapping <path> [options]
+  miku-json2xlsx convert --input <path|-> --output <path.xlsx> [--mapping <path>] [options]
   miku-json2xlsx --help
   miku-json2xlsx --version
 
@@ -1812,10 +2055,11 @@ Description:
 
 Recommended agent workflow:
   1. Run inspect --result-format json and review inspection.scope.
-  2. Create an explicit mapping, then run validate-mapping --result-format json.
-  3. Run convert --result-format json with the validated mapping.
+  2. Run convert without --mapping for deterministic automatic mapping.
+  3. To control columns explicitly, create and validate a mapping, then pass it
+     to convert with --mapping.
   4. Check the exit code, status, diagnostics, artifacts, and stream statistics.
-  The CLI does not infer or approve a mapping with AI.
+  Automatic mapping is deterministic and does not use AI.
 
 Minimal mapping v1:
   {
@@ -1835,14 +2079,17 @@ Minimal mapping v1:
   childOrderColumn, sourceRecordColumn, and a sourcePath ending in [].
 
 Default behavior:
-  Input, output, and mapping must be explicit. Existing output is protected
-  unless --overwrite is present. Result format defaults to text. No network
-  access is performed.
+  Input and output must be explicit. Mapping defaults to automatic generation
+  for file input; --mapping selects the explicit mode. Existing output is
+  protected unless --overwrite is present. Result format defaults to text.
+  No network access is performed.
 
 Inputs:
   --input accepts a UTF-8 JSON / JSONL path or - for stdin.
   inspect and convert can explicitly select json or jsonl with --input-format.
-  --mapping accepts a UTF-8 JSON mapping v1 file.
+  --mapping accepts a UTF-8 JSON mapping v1 file. When omitted, convert scans
+  the input file and generates mapping v1 before conversion.
+  --mapping-output optionally saves that generated mapping as deterministic JSON.
   JSONL input is processed incrementally when selected by .jsonl extension or
   --input-format jsonl. Progress is written only to stderr.
 
@@ -1851,24 +2098,26 @@ Outputs:
   --version writes the product name and package version to stdout.
   --result-format json writes one machine-readable operation result to stdout.
   Text diagnostics and JSONL progress are written to stderr.
-  convert writes one XLSX only to --output; binary XLSX is never mixed into
-  normal stdout and no sidecar files are generated.
+  convert writes one XLSX to --output. With automatic mapping,
+  --mapping-output additionally writes the generated mapping JSON. Binary XLSX
+  is never mixed into normal stdout.
 
 Generated artifacts:
   Normal convert usage generates the XLSX named by --output. Its first sheet is
   an English README data dictionary, followed by the root and mapped child
-  sheets. Development builds also create ignored dist/ and bundle/ files.
+  sheets. --mapping-output adds a reusable mapping artifact. Development builds
+  also create ignored dist/ and bundle/ files.
 
 Overwrite behavior:
-  --overwrite explicitly permits replacing --output. Conversion completes to a
-  temporary file before the output path is replaced.
+  --overwrite explicitly permits replacing --output and --mapping-output.
+  Conversion prepares requested artifacts in temporary files before publishing.
 
 Machine-readable output contract:
   --result-format json writes one stable JSON object to stdout. Inspect results
   use schemaVersion 1. Expected failures use status=failure and structured
   diagnostics. Successful convert results list completed XLSX files in
-  artifacts. Streamed JSONL results also report inputMode, recordsProcessed,
-  and rowsWritten.
+  artifacts and report mappingMode=explicit or auto. Streamed JSONL results also
+  report inputMode, recordsProcessed, and rowsWritten.
 
 Diagnostics / warnings:
   Diagnostics contain code, message, severity, and optional source location.
@@ -1879,8 +2128,9 @@ Diagnostics / warnings:
 Scope boundaries:
   This CLI does not convert DOCX/PPTX, reverse XLSX to JSON, design arbitrary
   report layouts, or make AI mapping decisions. JSON arrays and single objects
-  are buffered; bounded-memory conversion applies to JSONL. Initial child sheets
-  must directly reference the root and use one trailing [] array marker.
+  are buffered; bounded-memory conversion applies to JSONL. Automatic mapping
+  requires a file and keeps arrays as JSON columns. Initial explicit child
+  sheets must directly reference the root and use one trailing [] array marker.
 
 Exit codes:
   0  success
@@ -1892,7 +2142,8 @@ Convert options:
   --input <path|->          JSON / JSONL file path, or - for stdin.
   --input-format <format>   json or jsonl; otherwise infer from path/content.
   --output <path.xlsx>      XLSX output path. - is not accepted.
-  --mapping <path>          Explicit mapping v1 file path.
+  --mapping <path>          Explicit mapping v1 file; omit for automatic mapping.
+  --mapping-output <path>   Save generated mapping JSON (automatic mode only).
   --progress-interval <n>   Report every n streamed records to stderr (default: 0).
   --overwrite               Permit replacement of an existing output.
   --result-format <format>  text (default) or json.
@@ -1916,6 +2167,8 @@ Examples:
   miku-json2xlsx inspect --input records.jsonl --result-format json
   miku-json2xlsx validate-mapping --mapping mapping.json --result-format json
   miku-json2xlsx convert --input records.json --output records.xlsx --mapping mapping.json --result-format json
+  miku-json2xlsx convert --input records.jsonl --output records.xlsx --result-format json
+  miku-json2xlsx convert --input records.jsonl --output records.xlsx --mapping-output generated-mapping.json --result-format json
   miku-json2xlsx convert --input - --input-format jsonl --output records.xlsx --mapping mapping.json --result-format json
 
 References:
@@ -1929,6 +2182,7 @@ References:
 `;
 
 // src/ts/cli-options.ts
+import { resolve } from "node:path";
 function parseIntegerOption(value, option, allowZero, maximum) {
   if (!/^\d+$/.test(value)) return `${option} must be an integer.`;
   const parsed = Number(value);
@@ -1953,7 +2207,7 @@ function parseConvertOptions(args) {
       values.overwrite = true;
       continue;
     }
-    if (!["--input", "--input-format", "--output", "--mapping", "--progress-interval", "--result-format"].includes(option)) {
+    if (!["--input", "--input-format", "--output", "--mapping", "--mapping-output", "--progress-interval", "--result-format"].includes(option)) {
       return `Unsupported convert option: ${option}`;
     }
     if (seen.has(option)) return `Option ${option} must not be repeated.`;
@@ -1970,6 +2224,7 @@ function parseConvertOptions(args) {
     }
     if (option === "--output") values.output = value;
     if (option === "--mapping") values.mapping = value;
+    if (option === "--mapping-output") values.mappingOutput = value;
     if (option === "--progress-interval") {
       const parsed = parseIntegerOption(value, option, true, 1e9);
       if (typeof parsed === "string") return parsed;
@@ -1982,8 +2237,20 @@ function parseConvertOptions(args) {
       values.resultFormat = value;
     }
   }
-  for (const required of ["input", "output", "mapping"]) {
+  for (const required of ["input", "output"]) {
     if (!values[required]) return `Missing required option: --${required}`;
+  }
+  if (!values.mapping && values.input === "-") {
+    return "Automatic mapping requires --input to be a file path; stdin requires --mapping.";
+  }
+  if (values.mapping && values.mappingOutput) {
+    return "--mapping-output is available only when --mapping is omitted.";
+  }
+  if (values.mappingOutput === "-") {
+    return "--mapping-output must be a file path.";
+  }
+  if (values.mappingOutput && resolve(values.mappingOutput) === resolve(values.output)) {
+    return "--mapping-output must differ from --output.";
   }
   if (values.output === "-") {
     return "--output must be a file path because XLSX is a binary artifact.";

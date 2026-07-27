@@ -132,7 +132,7 @@ function runtimeCommand(skillDirectory, family, backend) {
     return { command: "java", prefix: ["-jar", path.resolve(skillDirectory, "runtime/miku-md2docx-java-1.0.1.jar")] };
   }
   if (family === "json2xlsx" && backend === "node") {
-    return { command: process.execPath, prefix: [path.resolve(skillDirectory, "runtime/miku-json2xlsx-0.4.1.mjs")] };
+    return { command: process.execPath, prefix: [path.resolve(skillDirectory, "runtime/miku-json2xlsx-0.4.2.mjs")] };
   }
   throw new Error(`unsupported ${family} backend: ${backend}`);
 }
