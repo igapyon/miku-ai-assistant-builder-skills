@@ -335,6 +335,26 @@ test("Gem handoff mirrors the shared Agent Builder input core", () => {
   assert.match(inputFields, /Starter promptsとCapabilities.*追加項目/);
 });
 
+test("Agent Builder names are rejected above 30 characters without silent truncation", () => {
+  const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
+  const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
+  const inputFields = fs.readFileSync(
+    path.resolve(skillRoot, "references/instructions/01-input-fields.md"),
+    "utf8"
+  );
+  const workflow = fs.readFileSync(
+    path.resolve(skillRoot, "references/workflows/01-folder-conversion.md"),
+    "utf8"
+  );
+
+  for (const content of [readme, skillMd, inputFields, workflow]) {
+    assert.match(content, /Agent Builder.*Name.*30文字以内/s);
+    assert.match(content, /無断で切り詰め/);
+    assert.match(content, /Gem.*(?:固定上限|30文字上限).*流用(?:しない|せず)/s);
+  }
+  assert.doesNotMatch(inputFields, /30文字以内を目安/);
+});
+
 test("new conversion waits for explicit platform and automatic-input scope", () => {
   const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
   const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");

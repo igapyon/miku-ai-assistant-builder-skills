@@ -274,7 +274,7 @@ Invoke this skill with this execution record as a reference. Confirm or change t
 15. ランナーのJSON workbook数、warning code、テキスト本実行生成数、Source Mapping、最終basename、成功履歴が計画と一致することを確認する。ランナーが入力集合、mapping SHA-256、構成、生成数の差を報告した場合は、既存`upload/`を維持して停止する。
 16. XLSXの開封可否、READMEデータ辞書、sheet、column、追跡列、元JSON / JSONLとの対応を確認する。MarkdownまたはDOCXの開封可否、元相対パス、ファイル境界、リンク、秘密情報と、準備済み文書の読取可否も検証する。
 17. 自動生成物と手動資料を合わせた最終候補総数が、対象サービスで確認した上限以下であることを確認する。
-18. `upload/`の実在ファイルからKnowledge一覧を作り、Agent Builderでは`agent-builder-input.md`、GemではName、Description、Custom instructions、Knowledge、Items to confirmを持つ`gem-input.md`へbasenameだけを記載する。
+18. `upload/`の実在ファイルからKnowledge一覧を作る。Agent BuilderではNameが30文字以内であることを検証して`agent-builder-input.md`へ記載する。30文字を超える場合は完成扱いにせず、無断で切り詰めずに利用者へ短縮を求める。Gemにはこの固定上限を流用せず、実画面で確認した制限を使い、Name、Description、Custom instructions、Knowledge、Items to confirmを持つ`gem-input.md`へbasenameだけを記載する。
 19. `upload/`の未参照ファイルと入力用Markdownの参照切れがないことを双方向に確認する。
 20. `items-to-confirm.md`を確定し、`preparation-status.md`と`execution-record.md`へ実行パラメータ、変換ジョブのパス、入力と出力の実績、検証結果を記録して状態を`finalized`へ更新する。
 21. 利用者へ`upload/`の登録候補、手動資料数、JSON workbook数、テキストバンドル数、合計数、確認事項、内容更新時の`node work/run-conversion.mjs`を示す。
@@ -307,6 +307,7 @@ Invoke this skill with this execution record as a reference. Confirm or change t
 - 構成固定の内容更新では同じランナーを再実行でき、入力パス集合、個数、basename、形式の差異を検出した場合は既存`upload/`を維持して停止する。
 - `manual-input/`の原本が変更されていない。
 - `agent-builder-input.md`または`gem-input.md`が対象サービスの入力項目順になっている。
+- Agent BuilderのNameが30文字以内である。超過時は完成扱いにせず、無断で切り詰めていない。Gemにはこの固定上限を流用していない。
 - `gem-input.md`にName、Description、Custom instructions、Knowledge、Items to confirmがこの順で存在する。
 - 第2段階が第1段階と同じ日時付き実行ディレクトリを再利用している。
 - Knowledge sources欄が`upload/`に実在するbasenameだけを使う。
