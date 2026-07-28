@@ -37,11 +37,11 @@ Agent BuilderとGemでは機能、上限、検証条件が異なります。各�
 同梱ランタイムは次のとおりです。
 
 - `miku-text-bundle` Node.js v1.6.0 / Java v1.6.0
-- `miku-md2docx` Node.js v1.0.1 / Java v1.0.1
-- `miku-json2xlsx` Node.js v0.4.2（**Beta**）
-- `miku-md2xlsx` Node.js v0.9.5 / Java v0.9.5（Excelブック出力: **Experimental**）
+- `miku-md2docx` Node.js v1.1.0 / Java v1.1.0
+- `miku-json2xlsx` Node.js v0.5.0（**Beta**）
+- `miku-md2xlsx` Node.js v0.10.0 / Java v0.10.0（Excelブック出力: **Experimental**）
 
-`miku-json2xlsx`は、承認済みの明示mappingを固定し、1つのJSONまたはJSONL入力から1つのXLSXを生成する経路として二段階変換へ組み込みます。上流v0.4.2は決定的な自動mappingを提供しますが、本スキルはmappingを人がレビューする安全境界を維持し、自動mappingを無レビューの変換契約として採用しません。`miku-md2xlsx`によるMarkdownからのExcelブック出力は**Experimental**であり、既定の二段階変換には組み込まれていません。
+`miku-json2xlsx`は、承認済みの明示mappingを固定し、1つのJSONまたはJSONL入力から1つのXLSXを生成する経路として二段階変換へ組み込みます。上流v0.5.0は決定的な自動mappingとXLSX内部エントリのDeflate圧縮を提供しますが、本スキルはmappingを人がレビューする安全境界を維持し、自動mappingを無レビューの変換契約として採用しません。`miku-md2xlsx`によるMarkdownからのExcelブック出力は**Experimental**であり、既定の二段階変換には組み込まれていません。
 
 ## Build
 

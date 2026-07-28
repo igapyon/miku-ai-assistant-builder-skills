@@ -19,6 +19,30 @@ function digestDirectory(directory) {
   return hash.digest("hex");
 }
 
+function zipCompressionMethods(buffer) {
+  const eocdSignature = 0x06054b50;
+  let eocdOffset = -1;
+  for (let offset = buffer.length - 22; offset >= 0; offset -= 1) {
+    if (buffer.readUInt32LE(offset) === eocdSignature) {
+      eocdOffset = offset;
+      break;
+    }
+  }
+  assert.notEqual(eocdOffset, -1, "ZIP end-of-central-directory record is missing");
+  const entryCount = buffer.readUInt16LE(eocdOffset + 10);
+  let offset = buffer.readUInt32LE(eocdOffset + 16);
+  const methods = [];
+  for (let index = 0; index < entryCount; index += 1) {
+    assert.equal(buffer.readUInt32LE(offset), 0x02014b50, "ZIP central-directory entry is invalid");
+    methods.push(buffer.readUInt16LE(offset + 10));
+    const nameLength = buffer.readUInt16LE(offset + 28);
+    const extraLength = buffer.readUInt16LE(offset + 30);
+    const commentLength = buffer.readUInt16LE(offset + 32);
+    offset += 46 + nameLength + extraLength + commentLength;
+  }
+  return methods;
+}
+
 test("a generated conversion job is reusable while file structure stays fixed", (t) => {
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "miku-conversion-job-"));
   t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
@@ -227,7 +251,9 @@ test("a conversion job creates one XLSX workbook for one reviewed JSON input", (
 
   const firstResult = JSON.parse(execFileSync(process.execPath, [runnerPath], { encoding: "utf8" }));
   const workbookPath = path.resolve(runDirectory, "upload/records.xlsx");
-  assert.equal(fs.readFileSync(workbookPath).subarray(0, 2).toString("ascii"), "PK");
+  const firstWorkbook = fs.readFileSync(workbookPath);
+  assert.equal(firstWorkbook.subarray(0, 2).toString("ascii"), "PK");
+  assert.deepEqual([...new Set(zipCompressionMethods(firstWorkbook))], [8]);
   assert.equal(firstResult.jsonWorkbookInputCount, 1);
   assert.deepEqual(firstResult.finalBasenames, ["records.xlsx"]);
   assert.deepEqual(firstResult.jsonWorkbookResults[0].warningCodes, []);

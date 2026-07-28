@@ -16,7 +16,7 @@ Excelブック出力はExperimentalである。1つのUTF-8 Markdownテキスト
 バックエンド指定がなければNode.js版を使用する。
 
 ```bash
-node <skill-root>/runtime/miku-md2xlsx-0.9.5.mjs input.md \
+node <skill-root>/runtime/miku-md2xlsx-0.10.0.mjs input.md \
   --out output.xlsx \
   --sheet-mode heading \
   --sheet-heading-depth 2
@@ -27,7 +27,7 @@ node <skill-root>/runtime/miku-md2xlsx-0.9.5.mjs input.md \
 Javaバックエンドが明示された場合はJava版を使用する。
 
 ```bash
-java -jar <skill-root>/runtime/miku-md2xlsx-java-0.9.5.jar input.md \
+java -jar <skill-root>/runtime/miku-md2xlsx-java-0.10.0.jar input.md \
   --out output.xlsx \
   --sheet-mode heading \
   --sheet-heading-depth 2

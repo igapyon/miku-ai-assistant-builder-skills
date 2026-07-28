@@ -21,19 +21,19 @@ test("bundle installs directly under the agent home skills directory", () => {
     const runtimeRoot = path.resolve(agentHome, "skills", skillName, "runtime");
     const skillScriptRoot = path.resolve(agentHome, "skills", skillName, "scripts");
     assert.equal(
-      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2docx-1.0.1.mjs"), "--version"], { encoding: "utf8" }).trim(),
-      "1.0.1"
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2docx-1.1.0.mjs"), "--version"], { encoding: "utf8" }).trim(),
+      "1.1.0"
     );
     assert.match(
-      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2docx-1.0.1.mjs"), "--help"], { encoding: "utf8" }),
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2docx-1.1.0.mjs"), "--help"], { encoding: "utf8" }),
       /Usage:/
     );
     assert.equal(
-      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2docx-java-1.0.1.jar"), "--version"], { encoding: "utf8" }).trim(),
-      "1.0.1"
+      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2docx-java-1.1.0.jar"), "--version"], { encoding: "utf8" }).trim(),
+      "1.1.0"
     );
     assert.match(
-      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2docx-java-1.0.1.jar"), "--help"], { encoding: "utf8" }),
+      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2docx-java-1.1.0.jar"), "--help"], { encoding: "utf8" }),
       /Usage:/
     );
     assert.equal(
@@ -53,27 +53,27 @@ test("bundle installs directly under the agent home skills directory", () => {
       /Usage:/
     );
     assert.equal(
-      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2xlsx-0.9.5.mjs"), "--version"], { encoding: "utf8" }).trim(),
-      "0.9.5"
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2xlsx-0.10.0.mjs"), "--version"], { encoding: "utf8" }).trim(),
+      "0.10.0"
     );
     assert.match(
-      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2xlsx-0.9.5.mjs"), "--help"], { encoding: "utf8" }),
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-md2xlsx-0.10.0.mjs"), "--help"], { encoding: "utf8" }),
       /Usage:/
     );
     assert.equal(
-      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2xlsx-java-0.9.5.jar"), "--version"], { encoding: "utf8" }).trim(),
-      "0.9.5"
+      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2xlsx-java-0.10.0.jar"), "--version"], { encoding: "utf8" }).trim(),
+      "0.10.0"
     );
     assert.match(
-      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2xlsx-java-0.9.5.jar"), "--help"], { encoding: "utf8" }),
+      execFileSync("java", ["-jar", path.resolve(runtimeRoot, "miku-md2xlsx-java-0.10.0.jar"), "--help"], { encoding: "utf8" }),
       /Usage:/
     );
     assert.equal(
-      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-json2xlsx-0.4.2.mjs"), "--version"], { encoding: "utf8" }).trim(),
-      "miku-json2xlsx 0.4.2"
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-json2xlsx-0.5.0.mjs"), "--version"], { encoding: "utf8" }).trim(),
+      "miku-json2xlsx 0.5.0"
     );
     assert.match(
-      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-json2xlsx-0.4.2.mjs"), "--help"], { encoding: "utf8" }),
+      execFileSync(process.execPath, [path.resolve(runtimeRoot, "miku-json2xlsx-0.5.0.mjs"), "--help"], { encoding: "utf8" }),
       /miku-json2xlsx - beta local-first JSON \/ JSONL to XLSX converter/
     );
 

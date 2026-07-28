@@ -33,11 +33,11 @@ test("generated index is required and current", () => {
     "scripts/create-conversion-job.mjs",
     "scripts/create-run-directory.mjs",
     "scripts/run-conversion-job.mjs",
-    "runtime/miku-md2docx-1.0.1.mjs",
-    "runtime/miku-md2docx-java-1.0.1.jar",
-    "runtime/miku-md2xlsx-0.9.5.mjs",
-    "runtime/miku-md2xlsx-java-0.9.5.jar",
-    "runtime/miku-json2xlsx-0.4.2.mjs",
+    "runtime/miku-md2docx-1.1.0.mjs",
+    "runtime/miku-md2docx-java-1.1.0.jar",
+    "runtime/miku-md2xlsx-0.10.0.mjs",
+    "runtime/miku-md2xlsx-java-0.10.0.jar",
+    "runtime/miku-json2xlsx-0.5.0.mjs",
     "runtime/miku-text-bundle-1.6.0.mjs",
     "runtime/miku-text-bundle-java-1.6.0.jar"
   ]) assert.ok(paths.includes(requiredPath), `index lacks ${requiredPath}`);
@@ -46,16 +46,16 @@ test("generated index is required and current", () => {
 test("bundled runtimes match declared versions and digests", () => {
   const runtimes = [
     {
-      file: "miku-md2docx-1.0.1.mjs",
+      file: "miku-md2docx-1.1.0.mjs",
       command: process.execPath,
-      version: "1.0.1",
-      sha256: "85bae25e3e595c6b2f5f74955196da5e010797506ee1d360a0e987a8004c1fe4"
+      version: "1.1.0",
+      sha256: "fc9557b737f8d156b08d28d989ce0c9608965fb7e8c7ae92d6c44205890b5fee"
     },
     {
-      file: "miku-md2docx-java-1.0.1.jar",
+      file: "miku-md2docx-java-1.1.0.jar",
       command: "java",
-      version: "1.0.1",
-      sha256: "53c9810e73049579c51879c50e990f8657fa87a26cf0d6b93fac3a1adfbc4532"
+      version: "1.1.0",
+      sha256: "9dfe021ea83af244046fe35545441157df9641db69ae4e4a9de33341a90a7f54"
     },
     {
       file: "miku-text-bundle-1.6.0.mjs",
@@ -70,22 +70,22 @@ test("bundled runtimes match declared versions and digests", () => {
       sha256: "b05d78b142af4cb8f99989a7428c6516e4aec2abea4ade51e772eb4cb853df97"
     },
     {
-      file: "miku-md2xlsx-0.9.5.mjs",
+      file: "miku-md2xlsx-0.10.0.mjs",
       command: process.execPath,
-      version: "0.9.5",
-      sha256: "cc2c292a421c3a5207508b1ba3b63a2b7f558e35a2b2837de0005e6d0ca44b20"
+      version: "0.10.0",
+      sha256: "64c1d7b4da4f05dd2a72176c1872c6ed0ba6dc219ea3020671edc60d11194b61"
     },
     {
-      file: "miku-md2xlsx-java-0.9.5.jar",
+      file: "miku-md2xlsx-java-0.10.0.jar",
       command: "java",
-      version: "0.9.5",
-      sha256: "1edec76192c260bfb89a951a7f7a74e5daede77c3f478668ad0ca6babe44c58f"
+      version: "0.10.0",
+      sha256: "e7dc5238808a73abe6c38fdb835ed008d355e119e86f5d4345c659924c9b4cb7"
     },
     {
-      file: "miku-json2xlsx-0.4.2.mjs",
+      file: "miku-json2xlsx-0.5.0.mjs",
       command: process.execPath,
-      version: "miku-json2xlsx 0.4.2",
-      sha256: "969e74f65c8f8cdb30e9ab067d43eeb5138f208b3e79f1ca4006e9511b5c4251"
+      version: "miku-json2xlsx 0.5.0",
+      sha256: "ab543255038d432730db486fec70ad8eb87df5f5751d592fd5907c4dfdac2b71"
     }
   ];
 
