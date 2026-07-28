@@ -73,6 +73,8 @@ ZIP は Agent home 直下へ展開する形式で、内部のスキルは `skill
 4. 確定した入力パス、mappingとSHA-256、手動資料、生成数、形式、basenameから、その実行専用の`work/conversion-plan.json`と`work/run-conversion.mjs`を作る。
 5. 初回からNode.jsランナーを実行し、各JSON / JSONLから1つのXLSXを生成して、他の自動資料と手動資料を合わせた最終`upload/`を構成する。Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を生成する。
 
+Agent Builder向けの`agent-builder-input.md`を生成するときは、Nameが30文字以内であることを検証します。30文字を超える場合は完成扱いにせず、名前を無断で切り詰めず、利用者へ短縮を依頼します。Gemにはこの固定上限を流用せず、利用者の実画面で確認した制限に従います。
+
 出力先の明示指定がなければ、新規変換ごとに次の日時付きディレクトリを作ります。
 
 ```text

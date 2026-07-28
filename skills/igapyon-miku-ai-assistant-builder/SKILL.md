@@ -97,7 +97,7 @@ Agent Builder向けは、端末からの埋め込みファイルを利用でき�
 8. 自動生成物と手動追加物の出力basenameが衝突する場合は、自動改名や上書きをせず、`upload/`を変更する前に停止する。
 9. 元リポジトリ基準の相対パスとファイル境界が自動生成MarkdownまたはDOCX本文に残ることを確認する。JSON workbookは承認済みmapping、READMEデータ辞書、追跡列によって元入力との対応を確認する。Knowledgeファイル間の相対リンクには依存せず、外部参照には確認済みの絶対URLを使う。
 10. InstructionsとKnowledge sourcesを分離する。振る舞い、処理順、口調、禁止事項、出力形式はInstructionsへ置き、回答根拠となる事実だけをKnowledge sourcesへ置く。
-11. [入力項目と推奨形式](references/instructions/01-input-fields.md)に従い、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を作る。GemにはName、Description、Custom instructions、Knowledge、Items to confirmをこの順で含める。Custom instructionsはGem画面のInstructions欄へ転記する内容とする。Instructionsには登録済みKnowledge sourcesを優先して検索し、見つからない情報を推測しない方針を含める。いずれもKnowledge一覧では`upload/`を付けず、`upload/`に実在するbasenameだけを記載する。
+11. [入力項目と推奨形式](references/instructions/01-input-fields.md)に従い、Agent Builderでは`agent-builder-input.md`、Gemでは`gem-input.md`を作る。Agent BuilderのNameは30文字以内であることを検証し、超過時は完成扱いにせず、無断で切り詰めずに利用者へ短縮を求める。Gemにはこの固定上限を流用せず、実画面で確認した制限を使う。GemにはName、Description、Custom instructions、Knowledge、Items to confirmをこの順で含める。Custom instructionsはGem画面のInstructions欄へ転記する内容とする。Instructionsには登録済みKnowledge sourcesを優先して検索し、見つからない情報を推測しない方針を含める。いずれもKnowledge一覧では`upload/`を付けず、`upload/`に実在するbasenameだけを記載する。
 12. 対象サービスで確認した上限以内であることを含め、対応、開封可否、サイズ、リンク、重複、矛盾、機密情報、スキップ、参照切れ、未参照ファイルを確認する。問題がなければ`preparation-status.md`と`execution-record.md`へ対象サービス、形式、枠配分、実行パラメータ、入力と出力の実績、検証結果を記録し、状態を`finalized`へ更新して利用者へ最終確認を求める。
 
 ## Output
@@ -178,6 +178,7 @@ workplace/
 - 第1段階では`miku-json2xlsx`のinspection、mapping作成、XLSX変換と`miku-text-bundle`を実行せず、手動資料数が確定した第2段階でmappingレビューと自動生成枠計算を行う。
 - Agent Builderでは人力資料を最大19件とし、自動生成Knowledge sourceを最低1件確保する。
 - Agent Builderでは最終`upload/`の登録候補を20件以内にする。Gemでは実画面で確認した上限を使う。
+- Agent BuilderのNameが30文字を超える場合は完成扱いにせず、無断で切り詰めずに利用者へ短縮を求める。Gemにはこの固定上限を流用しない。
 - `preparation-status.md`が再開可能な状態であることを確認せず第2段階を実行しない。
 - 第2段階の初回変換では、確定条件から`work/conversion-plan.json`と`work/run-conversion.mjs`を作り、CLIを個別に本実行せず同じランナーを実行する。
 - 状態が`finalized`の実行ディレクトリは、構成固定の内容更新として`work/run-conversion.mjs`を再実行できる。ランナーが構成差を報告した場合は計画を手編集して続行しない。

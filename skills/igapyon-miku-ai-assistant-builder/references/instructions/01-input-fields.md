@@ -46,7 +46,9 @@ Agent BuilderのStarter promptsとCapabilitiesは追加項目であり、Gemの�
 
 - エージェントの目的を名前だけで推測できるようにする。
 - 抽象的な名称より、対象業務または役割を示す。
-- Microsoft 365 CopilotのAgent Builderでは30文字以内を目安にする。
+- Microsoft 365 CopilotのAgent Builderでは30文字以内を必須とする。
+- 30文字を超える場合は入力データを完成扱いにせず、名前を無断で切り詰めず、利用者へ30文字以内への短縮を依頼する。
+- GemにはAgent Builderの30文字上限を流用せず、利用者の実画面で確認した制限に従う。
 
 ### Description
 
