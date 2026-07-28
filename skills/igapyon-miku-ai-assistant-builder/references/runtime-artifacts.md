@@ -8,11 +8,11 @@
 |---|---|---|---|---|
 | Knowledge source生成 | Java | `runtime/miku-text-bundle-java-1.6.0.jar` | `1.6.0` | `b05d78b142af4cb8f99989a7428c6516e4aec2abea4ade51e772eb4cb853df97` |
 | Knowledge source生成 | Node.js | `runtime/miku-text-bundle-1.6.0.mjs` | `1.6.0` | `b1044ae7fbcc13b5998d8aa857445bf80de02392875c75ecd002186e1f353c8b` |
-| DOCX生成 | Node.js | `runtime/miku-md2docx-1.0.1.mjs` | `1.0.1` | `85bae25e3e595c6b2f5f74955196da5e010797506ee1d360a0e987a8004c1fe4` |
-| DOCX生成 | Java | `runtime/miku-md2docx-java-1.0.1.jar` | `1.0.1` | `53c9810e73049579c51879c50e990f8657fa87a26cf0d6b93fac3a1adfbc4532` |
-| JSON / JSONLからXLSX生成（Beta） | Node.js | `runtime/miku-json2xlsx-0.4.2.mjs` | `0.4.2` | `969e74f65c8f8cdb30e9ab067d43eeb5138f208b3e79f1ca4006e9511b5c4251` |
-| XLSX生成（Experimental） | Node.js | `runtime/miku-md2xlsx-0.9.5.mjs` | `0.9.5` | `cc2c292a421c3a5207508b1ba3b63a2b7f558e35a2b2837de0005e6d0ca44b20` |
-| XLSX生成（Experimental） | Java | `runtime/miku-md2xlsx-java-0.9.5.jar` | `0.9.5` | `1edec76192c260bfb89a951a7f7a74e5daede77c3f478668ad0ca6babe44c58f` |
+| DOCX生成 | Node.js | `runtime/miku-md2docx-1.1.0.mjs` | `1.1.0` | `fc9557b737f8d156b08d28d989ce0c9608965fb7e8c7ae92d6c44205890b5fee` |
+| DOCX生成 | Java | `runtime/miku-md2docx-java-1.1.0.jar` | `1.1.0` | `9dfe021ea83af244046fe35545441157df9641db69ae4e4a9de33341a90a7f54` |
+| JSON / JSONLからXLSX生成（Beta） | Node.js | `runtime/miku-json2xlsx-0.5.0.mjs` | `0.5.0` | `ab543255038d432730db486fec70ad8eb87df5f5751d592fd5907c4dfdac2b71` |
+| XLSX生成（Experimental） | Node.js | `runtime/miku-md2xlsx-0.10.0.mjs` | `0.10.0` | `64c1d7b4da4f05dd2a72176c1872c6ed0ba6dc219ea3020671edc60d11194b61` |
+| XLSX生成（Experimental） | Java | `runtime/miku-md2xlsx-java-0.10.0.jar` | `0.10.0` | `e7dc5238808a73abe6c38fdb835ed008d355e119e86f5d4345c659924c9b4cb7` |
 
 ## 選択順
 
@@ -29,10 +29,10 @@
 
 - `miku-text-bundle` Node.js: <https://github.com/igapyon/miku-text-bundle/releases/tag/v1.6.0>
 - `miku-text-bundle` Java: <https://github.com/igapyon/miku-text-bundle-java/releases/tag/v1.6.0>
-- `miku-md2docx` Node.js: <https://github.com/igapyon/miku-md2docx/releases/tag/v1.0.1>
-- `miku-md2docx` Java: <https://github.com/igapyon/miku-md2docx-java/releases/tag/v1.0.1>
-- `miku-json2xlsx` Node.js: <https://github.com/igapyon/miku-json2xlsx/releases/tag/v0.4.2>
-- `miku-md2xlsx` Node.js: <https://github.com/igapyon/miku-md2xlsx/releases/tag/v0.9.5>
-- `miku-md2xlsx` Java: <https://github.com/igapyon/miku-md2xlsx-java/releases/tag/v0.9.5>
+- `miku-md2docx` Node.js: <https://github.com/igapyon/miku-md2docx/releases/tag/v1.1.0>
+- `miku-md2docx` Java: <https://github.com/igapyon/miku-md2docx-java/releases/tag/v1.1.0>
+- `miku-json2xlsx` Node.js: <https://github.com/igapyon/miku-json2xlsx/releases/tag/v0.5.0>
+- `miku-md2xlsx` Node.js: <https://github.com/igapyon/miku-md2xlsx/releases/tag/v0.10.0>
+- `miku-md2xlsx` Java: <https://github.com/igapyon/miku-md2xlsx-java/releases/tag/v0.10.0>
 
 ランタイム更新時は、Node.js版とJava版を個別の上流リリースへ固定し、ファイル、版、SHA-256、索引、スモークテストを同時に更新する。

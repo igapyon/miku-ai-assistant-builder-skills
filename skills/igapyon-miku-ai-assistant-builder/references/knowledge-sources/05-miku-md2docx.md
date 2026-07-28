@@ -8,12 +8,12 @@ Markdownは中間成果物、DOCXは最終登録候補とする。Markdown-to-Of
 
 ## ランタイム
 
-バックエンド指定がなければ、単一ファイルへ依存をバンドルしたNode.js CLI版`miku-md2docx-1.0.1.mjs`を使用する。利用者がJavaバックエンドを明示した場合はJava版`miku-md2docx-java-1.0.1.jar`を使用する。本スキル全体にはNode.js 22以降が必要であり、どちらの変換バックエンドも外部依存のダウンロードやネットワーク接続を要求しない。
+バックエンド指定がなければ、単一ファイルへ依存をバンドルしたNode.js CLI版`miku-md2docx-1.1.0.mjs`を使用する。利用者がJavaバックエンドを明示した場合はJava版`miku-md2docx-java-1.1.0.jar`を使用する。本スキル全体にはNode.js 22以降が必要であり、どちらの変換バックエンドも外部依存のダウンロードやネットワーク接続を要求しない。
 
 実行前に`--help`と`--version`でCLI契約を確認する。通常変換では入力Markdownと主出力`--out`だけを指定し、summaryなどの追加成果物を勝手に生成しない。
 
 ```text
-node <skill-root>/runtime/miku-md2docx-1.0.1.mjs \
+node <skill-root>/runtime/miku-md2docx-1.1.0.mjs \
   work/knowledge-markdown/knowledge-001.md \
   --out upload/knowledge-001.docx
 ```
@@ -21,7 +21,7 @@ node <skill-root>/runtime/miku-md2docx-1.0.1.mjs \
 Java版を使用する場合も、入力と主出力だけを指定する。
 
 ```text
-java -jar <skill-root>/runtime/miku-md2docx-java-1.0.1.jar \
+java -jar <skill-root>/runtime/miku-md2docx-java-1.1.0.jar \
   work/knowledge-markdown/knowledge-001.md \
   --out upload/knowledge-001.docx
 ```
@@ -31,7 +31,7 @@ java -jar <skill-root>/runtime/miku-md2docx-java-1.0.1.jar \
 手動Markdownも同じ規則で変換する。原本は`manual-input/`に残し、直接書き換えない。
 
 ```text
-node <skill-root>/runtime/miku-md2docx-1.0.1.mjs \
+node <skill-root>/runtime/miku-md2docx-1.1.0.mjs \
   manual-input/additional-guide.md \
   --out <temporary-output>/additional-guide.docx
 ```

@@ -3,7 +3,7 @@
 // package.json
 var package_default = {
   name: "miku-json2xlsx",
-  version: "0.4.2",
+  version: "0.5.0",
   private: true,
   description: "Local-first deterministic JSON and JSONL to XLSX conversion CLI.",
   type: "module",
@@ -47,7 +47,7 @@ var package_default = {
 
 // src/ts/cli-commands.ts
 import { access, readFile as readFile2, rename, unlink, writeFile } from "node:fs/promises";
-import { basename, dirname, join as join2 } from "node:path";
+import { basename, dirname, join as join3 } from "node:path";
 
 // src/ts/cli-output.ts
 var DEFAULT_IO = {
@@ -231,11 +231,18 @@ async function generateAutoMapping(records) {
 }
 
 // src/ts/stored-zip.ts
-import { open, stat } from "node:fs/promises";
+import { createReadStream, createWriteStream } from "node:fs";
+import { mkdtemp, open, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { pipeline } from "node:stream/promises";
+import { createDeflateRaw, deflateRawSync } from "node:zlib";
 var ZIP32_MAX_ENTRY_COUNT = 65535;
 var ZIP32_MAX_VALUE = 4294967295;
 var ZIP_MAX_PATH_BYTES = 65535;
 var FILE_CHUNK_SIZE = 64 * 1024;
+var DEFLATE_COMPRESSION_LEVEL = 9;
+var ZIP_METHOD_DEFLATE = 8;
 var encoder = new TextEncoder();
 var crcTable = new Uint32Array(256);
 for (let index = 0; index < 256; index += 1) {
@@ -310,35 +317,35 @@ function encodedPath(path) {
   }
   return name;
 }
-function localHeader(path, crc, size) {
+function localHeader(path, compressionMethod, crc, compressedSize, uncompressedSize) {
   const name = encodedPath(path);
   const local = new Uint8Array(30 + name.length);
   writeUint32(local, 0, 67324752);
   writeUint16(local, 4, 20);
   writeUint16(local, 6, 2048);
-  writeUint16(local, 8, 0);
+  writeUint16(local, 8, compressionMethod);
   writeUint16(local, 10, 0);
   writeUint16(local, 12, 33);
   writeUint32(local, 14, crc);
-  writeUint32(local, 18, size);
-  writeUint32(local, 22, size);
+  writeUint32(local, 18, compressedSize);
+  writeUint32(local, 22, uncompressedSize);
   writeUint16(local, 26, name.length);
   local.set(name, 30);
   return local;
 }
-function centralHeader(path, crc, size, localOffset) {
+function centralHeader(path, compressionMethod, crc, compressedSize, uncompressedSize, localOffset) {
   const name = encodedPath(path);
   const central = new Uint8Array(46 + name.length);
   writeUint32(central, 0, 33639248);
   writeUint16(central, 4, 20);
   writeUint16(central, 6, 20);
   writeUint16(central, 8, 2048);
-  writeUint16(central, 10, 0);
+  writeUint16(central, 10, compressionMethod);
   writeUint16(central, 12, 0);
   writeUint16(central, 14, 33);
   writeUint32(central, 16, crc);
-  writeUint32(central, 20, size);
-  writeUint32(central, 24, size);
+  writeUint32(central, 20, compressedSize);
+  writeUint32(central, 24, uncompressedSize);
   writeUint16(central, 28, name.length);
   writeUint32(central, 42, localOffset);
   central.set(name, 46);
@@ -369,17 +376,43 @@ function prepareMemoryEntries(entries) {
     };
   }).sort((left, right) => comparePaths(left.path, right.path));
 }
-function writeStoredZip(entries) {
-  const prepared = prepareMemoryEntries(entries);
+function prepareDeflatedMemoryEntries(entries) {
+  return prepareMemoryEntries(entries).map((entry) => {
+    const compressedData = deflateRawSync(entry.data, { level: DEFLATE_COMPRESSION_LEVEL });
+    assertZip32Value(compressedData.length, `ZIP compressed entry size for ${entry.path}`);
+    return {
+      ...entry,
+      compressedData,
+      compressedSize: compressedData.length
+    };
+  });
+}
+function writeDeflatedZip(entries) {
+  const prepared = prepareDeflatedMemoryEntries(entries);
   const localParts = [];
   const centralParts = [];
   let localOffset = 0;
   for (const entry of prepared) {
     assertZip32Value(localOffset, "ZIP local entry offset");
-    const local = localHeader(entry.path, entry.crc, entry.size);
-    centralParts.push(centralHeader(entry.path, entry.crc, entry.size, localOffset));
-    localParts.push(local, entry.data);
-    localOffset += local.length + entry.size;
+    const local = localHeader(
+      entry.path,
+      ZIP_METHOD_DEFLATE,
+      entry.crc,
+      entry.compressedSize,
+      entry.size
+    );
+    centralParts.push(
+      centralHeader(
+        entry.path,
+        ZIP_METHOD_DEFLATE,
+        entry.crc,
+        entry.compressedSize,
+        entry.size,
+        localOffset
+      )
+    );
+    localParts.push(local, entry.compressedData);
+    localOffset += local.length + entry.compressedSize;
   }
   const centralDirectory = concatBytes(centralParts);
   const end = endOfCentralDirectory(prepared.length, centralDirectory.length, localOffset);
@@ -400,28 +433,6 @@ async function fileCrc32(filePath) {
   }
   return (crc ^ 4294967295) >>> 0;
 }
-async function prepareEntries(entries) {
-  assertEntryCount(entries.length);
-  const prepared = [];
-  for (const entry of entries) {
-    const entryPath = normalizeStoredZipPath(entry.path);
-    if ("data" in entry) {
-      const data = typeof entry.data === "string" ? encoder.encode(entry.data) : entry.data;
-      assertZip32Value(data.length, `ZIP entry size for ${entry.path}`);
-      prepared.push({ path: entryPath, data, size: data.length, crc: crc32(data) });
-      continue;
-    }
-    const details = await stat(entry.filePath);
-    assertZip32Value(details.size, `ZIP entry size for ${entry.path}`);
-    prepared.push({
-      path: entryPath,
-      filePath: entry.filePath,
-      size: details.size,
-      crc: await fileCrc32(entry.filePath)
-    });
-  }
-  return prepared.sort((left, right) => comparePaths(left.path, right.path));
-}
 async function copyFileToSink(filePath, sink) {
   const input = await open(filePath, "r");
   const buffer = new Uint8Array(FILE_CHUNK_SIZE);
@@ -435,45 +446,110 @@ async function copyFileToSink(filePath, sink) {
     await input.close();
   }
 }
-async function writeStoredZipToSink(entries, sink) {
-  const prepared = await prepareEntries(entries);
-  const centralParts = [];
-  let localOffset = 0;
-  for (const entry of prepared) {
-    assertZip32Value(localOffset, "ZIP local entry offset");
-    const local = localHeader(entry.path, entry.crc, entry.size);
-    await sink.write(local);
-    if ("data" in entry) await sink.write(entry.data);
-    else await copyFileToSink(entry.filePath, sink);
-    centralParts.push(centralHeader(entry.path, entry.crc, entry.size, localOffset));
-    localOffset += local.length + entry.size;
-  }
-  const centralDirectory = concatBytes(centralParts);
-  const end = endOfCentralDirectory(prepared.length, centralDirectory.length, localOffset);
-  await sink.write(centralDirectory);
-  await sink.write(end);
+async function deflateFile(inputPath, outputPath) {
+  await pipeline(
+    createReadStream(inputPath, { highWaterMark: FILE_CHUNK_SIZE }),
+    createDeflateRaw({ level: DEFLATE_COMPRESSION_LEVEL }),
+    createWriteStream(outputPath)
+  );
+  const details = await stat(outputPath);
+  assertZip32Value(details.size, `ZIP compressed entry size for ${inputPath}`);
+  return details.size;
 }
-async function writeStoredZipFile(outputPath, entries) {
+async function prepareDeflatedEntries(entries, directory) {
+  assertEntryCount(entries.length);
+  const prepared = [];
+  for (const [index, entry] of entries.entries()) {
+    const entryPath = normalizeStoredZipPath(entry.path);
+    if ("data" in entry) {
+      const data = typeof entry.data === "string" ? encoder.encode(entry.data) : entry.data;
+      assertZip32Value(data.length, `ZIP entry size for ${entry.path}`);
+      const compressedData = deflateRawSync(data, { level: DEFLATE_COMPRESSION_LEVEL });
+      assertZip32Value(compressedData.length, `ZIP compressed entry size for ${entry.path}`);
+      prepared.push({
+        path: entryPath,
+        data,
+        size: data.length,
+        crc: crc32(data),
+        compressedData,
+        compressedSize: compressedData.length
+      });
+      continue;
+    }
+    const details = await stat(entry.filePath);
+    assertZip32Value(details.size, `ZIP entry size for ${entry.path}`);
+    const compressedFilePath = join(directory, `${index}.deflate`);
+    const compressedSize = await deflateFile(entry.filePath, compressedFilePath);
+    prepared.push({
+      path: entryPath,
+      filePath: entry.filePath,
+      size: details.size,
+      crc: await fileCrc32(entry.filePath),
+      compressedFilePath,
+      compressedSize
+    });
+  }
+  return prepared.sort((left, right) => comparePaths(left.path, right.path));
+}
+async function writeDeflatedZipFile(outputPath, entries) {
+  const directory = await mkdtemp(join(tmpdir(), "miku-json2xlsx-deflate-"));
   const output = await open(outputPath, "w");
   try {
-    await writeStoredZipToSink(entries, {
+    const prepared = await prepareDeflatedEntries(entries, directory);
+    const centralParts = [];
+    let localOffset = 0;
+    const sink = {
       async write(data) {
         let offset = 0;
         while (offset < data.length) {
           const { bytesWritten } = await output.write(data, offset, data.length - offset);
-          if (bytesWritten === 0) throw new Error(`Unable to make progress writing ZIP output: ${outputPath}`);
+          if (bytesWritten === 0) {
+            throw new Error(`Unable to make progress writing ZIP output: ${outputPath}`);
+          }
           offset += bytesWritten;
         }
       }
-    });
+    };
+    for (const entry of prepared) {
+      assertZip32Value(localOffset, "ZIP local entry offset");
+      const local = localHeader(
+        entry.path,
+        ZIP_METHOD_DEFLATE,
+        entry.crc,
+        entry.compressedSize,
+        entry.size
+      );
+      await sink.write(local);
+      if ("compressedData" in entry) await sink.write(entry.compressedData);
+      else await copyFileToSink(entry.compressedFilePath, sink);
+      centralParts.push(
+        centralHeader(
+          entry.path,
+          ZIP_METHOD_DEFLATE,
+          entry.crc,
+          entry.compressedSize,
+          entry.size,
+          localOffset
+        )
+      );
+      localOffset += local.length + entry.compressedSize;
+    }
+    const centralDirectory = concatBytes(centralParts);
+    const end = endOfCentralDirectory(prepared.length, centralDirectory.length, localOffset);
+    await sink.write(centralDirectory);
+    await sink.write(end);
   } finally {
-    await output.close();
+    try {
+      await output.close();
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
   }
 }
 
 // src/ts/office-zip.ts
-var writeOfficeZip = writeStoredZip;
-var writeOfficeZipFile = writeStoredZipFile;
+var writeOfficeZip = writeDeflatedZip;
+var writeOfficeZipFile = writeDeflatedZipFile;
 
 // src/ts/xlsx-writer.ts
 function xlsxXml(value) {
@@ -1387,7 +1463,7 @@ function parseAndValidateMapping(text) {
 }
 
 // src/ts/node-input.ts
-import { createReadStream } from "node:fs";
+import { createReadStream as createReadStream2 } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
@@ -1528,13 +1604,13 @@ async function* readJsonlRecordsFromStream(input, sourceName = "stdin") {
   }
 }
 function readJsonlRecordsFromFile(path) {
-  return readJsonlRecordsFromStream(createReadStream(path), path);
+  return readJsonlRecordsFromStream(createReadStream2(path), path);
 }
 
 // src/ts/streaming-converter.ts
-import { open as open2, mkdtemp, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { open as open2, mkdtemp as mkdtemp2, rm as rm2 } from "node:fs/promises";
+import { join as join2 } from "node:path";
+import { tmpdir as tmpdir2 } from "node:os";
 var EXCEL_MAX_ROWS2 = 1048576;
 var MAX_DIAGNOSTICS = 1e3;
 var MAX_UNKNOWN_PATHS = 1e3;
@@ -1613,7 +1689,7 @@ async function convertJsonlStreamToXlsxFile(records, mapping, outputPath, option
       inputMode: "streaming-jsonl"
     };
   }
-  const directory = await mkdtemp(join(tmpdir(), "miku-json2xlsx-stream-"));
+  const directory = await mkdtemp2(join2(tmpdir2(), "miku-json2xlsx-stream-"));
   const spools = [];
   const diagnostics = [];
   const diagnosticCounts = /* @__PURE__ */ new Map();
@@ -1630,8 +1706,8 @@ async function convertJsonlStreamToXlsxFile(records, mapping, outputPath, option
   };
   try {
     for (const [index, definition] of prepared.sheets.entries()) {
-      const bodyPath = join(directory, `sheet-${index + 1}.rows.xml`);
-      const worksheetPath = join(directory, `sheet-${index + 1}.xml`);
+      const bodyPath = join2(directory, `sheet-${index + 1}.rows.xml`);
+      const worksheetPath = join2(directory, `sheet-${index + 1}.xml`);
       const body = await open2(bodyPath, "w");
       await body.write(xlsxRowXml(definition.headers, 0));
       spools.push({ definition, bodyPath, worksheetPath, body, rowCount: 1 });
@@ -1730,7 +1806,7 @@ async function convertJsonlStreamToXlsxFile(records, mapping, outputPath, option
     if (!handlesClosed) {
       for (const spool of spools) await spool.body.close().catch(() => void 0);
     }
-    await rm(directory, { recursive: true, force: true });
+    await rm2(directory, { recursive: true, force: true });
   }
 }
 
@@ -1846,7 +1922,7 @@ async function publishPreparedFiles(files, overwrite) {
     for (const [index, file] of files.entries()) {
       if (!await outputExists(file.targetPath)) continue;
       if (!overwrite) throw new Error(`Output already exists: ${file.targetPath}`);
-      const backupPath = join2(
+      const backupPath = join3(
         dirname(file.targetPath),
         `.${basename(file.targetPath)}.${transactionId}-${index}.backup`
       );
@@ -1943,8 +2019,8 @@ async function runConvert(options, io) {
       return writeExpectedFailure({ status: "failure", command: "convert", diagnostics: [{ code: "OUTPUT_EXISTS", message: `Output already exists: ${outputPath}. Use --overwrite to replace it.`, severity: "error", source: { input: outputPath } }], artifacts: [] }, options.resultFormat, io);
     }
   }
-  const temporaryPath = join2(dirname(options.output), `.${Date.now()}-${process.pid}.miku-json2xlsx.tmp`);
-  const mappingTemporaryPath = options.mappingOutput ? join2(dirname(options.mappingOutput), `.${Date.now()}-${process.pid}.miku-json2xlsx-mapping.tmp`) : void 0;
+  const temporaryPath = join3(dirname(options.output), `.${Date.now()}-${process.pid}.miku-json2xlsx.tmp`);
+  const mappingTemporaryPath = options.mappingOutput ? join3(dirname(options.mappingOutput), `.${Date.now()}-${process.pid}.miku-json2xlsx-mapping.tmp`) : void 0;
   const streaming = options.inputFormat === "jsonl" || options.inputFormat === void 0 && options.input !== "-" && options.input.toLowerCase().endsWith(".jsonl");
   let conversionDetails = {};
   const sourceFileName = options.input === "-" ? "stdin" : basename(options.input);

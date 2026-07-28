@@ -13,12 +13,12 @@ const runtimes = [
   {
     name: "Node.js",
     command: process.execPath,
-    args: [path.resolve(skillRoot, "runtime", "miku-md2xlsx-0.9.5.mjs")]
+    args: [path.resolve(skillRoot, "runtime", "miku-md2xlsx-0.10.0.mjs")]
   },
   {
     name: "Java",
     command: "java",
-    args: ["-jar", path.resolve(skillRoot, "runtime", "miku-md2xlsx-java-0.9.5.jar")]
+    args: ["-jar", path.resolve(skillRoot, "runtime", "miku-md2xlsx-java-0.10.0.jar")]
   }
 ];
 
