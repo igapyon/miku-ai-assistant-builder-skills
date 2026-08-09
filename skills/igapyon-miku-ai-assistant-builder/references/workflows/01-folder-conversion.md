@@ -14,24 +14,24 @@
 
 ## 配備先と形式の選択
 
-新規変換では、主対象の`agent-builder`（Microsoft 365 Copilot Agent Builder）または`gem`（Google Gemini Gem Classic）を利用者に確認する。それ以前の会話で明示されていない限り、主対象だからという理由でAgent Builderを既定値にしない。Agent Builderは端末からの埋め込みファイルを利用できる環境、GemはKnowledgeへのファイル追加を利用できる環境だけを対象にする。
+新規変換では、主対象の`agent-builder`（Microsoft 365 Copilot Agent Builder）または`gem`（Google Gemini Gem Classic）を利用者の会話から解決する。それ以前の会話で直接指定、引用、または一意に類推できない限り、主対象だからという理由でAgent Builderを既定値にしない。Agent Builderは端末からの埋め込みファイルを利用できる環境、GemはKnowledgeへのファイル追加を利用できる環境だけを対象にする。
 
 Gemでは、Knowledge用Markdownを`markdown`のまま使うか`docx`へ変換するかも確認する。Markdownの添付可否、DOCXとの回答品質差、ファイル上限は環境や製品更新に依存するため、推測で選ばない。選択を`work/preparation-status.md`へ記録し、再開時に変更しない。
 
-## 開始前に人へ確認すること
+## 開始情報の解決
 
-新規変換では、それ以前の会話で明示されていない項目を、ファイル操作より先に利用者へ確認する。
+新規変換では、次の項目をファイル操作より先に解決し、各値を`explicit`、`quoted`、`inferred`、または`delegated`として記録する。
 
 - 配備先がMicrosoft 365 Copilot Agent BuilderかGoogle Gemini Gem Classicか
 - 入力元となる正確なフォルダ
 - 入力フォルダ配下で自動処理対象にする範囲。フォルダ全体か一部のサブフォルダか、明示的な除外があるか
 - Gem Classicの場合はKnowledge用Markdownを`markdown`のまま使うか`docx`へ変換するか
 
-必須の回答が不足している場合は質問して停止する。質問する前は、現在の作業ディレクトリ、リポジトリルート、開いているファイル、添付ファイル、ファイル名を回答の代わりにしない。確認前は入力フォルダの一覧取得や内容確認を行わず、`Auto include`を決めず、出力フォルダや`work/preparation-status.md`を作らず、同梱CLIを実行しない。
+`explicit`は利用者が直接指定した値、`quoted`は利用者が会話上の過去の指定または指定済み記録を引用して再利用するよう示した値、`inferred`は利用者が示した複数の事実から競合なく一意に導ける値、`delegated`は利用者が`特に指定なし`、`おまかせ`、または同等の委任を明示して補完した値を指す。
 
-利用者が質問への回答として`特に指定なし`、`おまかせ`、または同等の委任を明示した項目は、その時点で初めて想定で補完してよい。目的に合う最小限の配備先と入力範囲を選び、採用する想定を列挙してから棚卸しへ進む。無回答を委任と解釈しない。利用者が一部だけ指定した場合は、指定済みの値を維持し、委任された項目だけを補完する。
+各項目をこのいずれかとして解決できるなら、採用値と根拠を短く復唱して進む。確認のためだけに利用者の回答を待たない。`inferred`は利用者が示した事実だけから一意に決まる場合に限る。現在の作業ディレクトリ、リポジトリルート、開いているファイル、添付ファイル、ファイル名、またはモデルの一般知識だけを根拠にしてはならない。
 
-それ以前の会話で項目が明示済みなら再質問せず、採用する値を短く復唱する。曖昧な指示、複数候補、以前の会話との矛盾がある場合は明示済みとみなさない。
+未解決、曖昧、複数候補、以前の会話との矛盾、または利用者の事実に裏付けられない推測がある項目だけを質問して停止する。未解決の項目がある間は、その入力フォルダの一覧取得や内容確認を行わず、`Auto include`を決めず、出力フォルダや`work/preparation-status.md`を作らず、同梱CLIを実行しない。無回答を委任と解釈しない。利用者が一部だけ指定した場合は、解決済みの値を維持し、未解決の項目だけを質問する。
 
 ## 前回条件を参照する反復実行
 
@@ -106,7 +106,7 @@ node <skill-directory>/scripts/create-run-directory.mjs --base-directory <output
 
 ## 第1段階: 自動入力の確定と準備待ち
 
-1. 開始前確認を完了し、配備先、入力元、自動処理範囲を復唱する。その後、エージェントの目的、対象利用者、代表的な質問、正式資料、出力先を特定する。出力先の明示指定がなければ、前述の日時付き既定出力先を採用する。GemではMarkdownまたはDOCXも選ぶ。質問前に必須項目を仮定しない。利用者が明示的に委任した項目だけは、想定を列挙して補完する。
+1. 開始情報を解決し、配備先、入力元、自動処理範囲と各根拠を復唱する。その後、エージェントの目的、対象利用者、代表的な質問、正式資料、出力先を特定する。出力先の明示指定がなければ、前述の日時付き既定出力先を採用する。GemではMarkdownまたはDOCXも解決する。利用者の事実から一意に解決できない必須項目は質問する。利用者が明示的に委任した項目だけは、想定を列挙して補完する。
 2. ファイルの相対パス、形式、サイズ、更新日時、文字コード、読取可否を棚卸しする。
 3. 適格な`.json`と`.jsonl`を、同梱`miku-json2xlsx`で1入力1XLSXへ変換する`JSON workbook`へ分類する。その他の`.md`、`.mjs`、`.js`など、同梱`miku-text-bundle`が扱えるテキスト系ファイルを既定で`Auto include`へ分類する。同じJSON / JSONLを両方へ重複投入しない。内容の関連性、推定テーマ、旧版、重複候補だけを理由に対象を絞り込まない。
 4. `.env`と`.env.*`、秘密情報、出力先、利用者が明示した除外、ランタイムが技術的に扱えないファイルだけを`Exclude`または`Confirm`へ分類し、理由を記録する。
@@ -136,8 +136,12 @@ node <skill-directory>/scripts/create-run-directory.mjs --base-directory <output
 
 - State: awaiting-manual-input
 - Target platform: [agent-builder または gem]
+- Target platform basis: [explicit、quoted、inferred、またはdelegated]
 - Gem knowledge format: [markdown、docx、またはN/A]
+- Gem knowledge format basis: [explicit、quoted、inferred、delegated、またはN/A]
 - Source directory: [入力元]
+- Source directory basis: [explicit、quoted、inferred、またはdelegated]
+- Automatic input scope basis: [explicit、quoted、inferred、またはdelegated]
 - Output directory: [出力先]
 - Output base directory: [workplace、temp1、または利用者指定の基準ディレクトリ]
 - Run ID: [YYYYMMDD-HHmmまたは衝突回避連番付きID]
@@ -182,9 +186,12 @@ Place optional source files in manual-input/, then invoke this skill again with 
 
 - State: awaiting-manual-input または finalized
 - Target platform: [agent-builder または gem]
+- Target platform basis: [explicit、quoted、inferred、またはdelegated]
 - Gem knowledge format: [markdown、docx、またはN/A]
+- Gem knowledge format basis: [explicit、quoted、inferred、delegated、またはN/A]
 - Source directory: [入力元]
 - Automatic input scope: [対象範囲]
+- Automatic input scope basis: [explicit、quoted、inferred、またはdelegated]
 - Explicit exclusions: [除外、またはNone]
 - Output base directory: [基準ディレクトリ]
 - Output directory: [今回の新規日時付き出力先]

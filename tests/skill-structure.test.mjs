@@ -355,7 +355,7 @@ test("Agent Builder names are rejected above 30 characters without silent trunca
   assert.doesNotMatch(inputFields, /30文字以内を目安/);
 });
 
-test("new conversion waits for explicit platform and automatic-input scope", () => {
+test("new conversion resolves platform and automatic-input scope from user evidence", () => {
   const readme = fs.readFileSync(path.resolve(ROOT, "README.md"), "utf8");
   const skillMd = fs.readFileSync(path.resolve(skillRoot, "SKILL.md"), "utf8");
   const workflow = fs.readFileSync(
@@ -370,16 +370,17 @@ test("new conversion waits for explicit platform and automatic-input scope", () 
   assert.match(skillMd, /## 開始確認ゲート/);
   assert.match(skillMd, /Microsoft 365 Copilot Agent Builder.*Google Gemini Gem Classic/);
   assert.match(skillMd, /自動処理の入力範囲/);
-  assert.match(skillMd, /どちらか一方でも未確定なら.*回答を待って停止する/);
-  assert.match(skillMd, /質問する前から、現在の作業ディレクトリ.*リポジトリルート.*開いているファイル.*決め込まない/);
-  assert.match(skillMd, /`特に指定なし`、`おまかせ`.*回答後に合理的な想定で補完してよい/);
+  assert.match(skillMd, /`explicit`、`quoted`、`inferred`、または`delegated`として両方を解決できるなら/);
+  assert.match(skillMd, /`inferred`は、利用者が示した事実だけから一意に決まる場合に限る/);
+  assert.match(skillMd, /現在の作業ディレクトリ、リポジトリルート、開いているファイル.*だけを根拠にしてはならない/);
+  assert.match(skillMd, /未解決、曖昧、複数候補、会話内の矛盾/);
   assert.match(skillMd, /無回答、曖昧な返答、話題の変更を委任とみなさない/);
-  assert.match(workflow, /## 開始前に人へ確認すること/);
-  assert.match(workflow, /確認前は入力フォルダの一覧取得や内容確認を行わず/);
-  assert.match(workflow, /委任された項目だけを補完する/);
-  assert.match(readme, /「特に指定なし」「おまかせ」.*回答後に初めて/);
-  assert.match(openaiYaml, /wait for the answers before inspecting files/);
-  assert.match(openaiYaml, /explicitly says there is no preference or delegates the choice/);
+  assert.match(workflow, /## 開始情報の解決/);
+  assert.match(workflow, /`explicit`、`quoted`、`inferred`、または`delegated`として記録/);
+  assert.match(workflow, /確認のためだけに利用者の回答を待たない/);
+  assert.match(readme, /過去の指定を引用した値.*一意に類推できる値/);
+  assert.match(openaiYaml, /quoted prior choices.*single unambiguous inference/);
+  assert.match(openaiYaml, /Ask only for unresolved, ambiguous, conflicting, or unsupported values/);
 });
 
 test("manual files determine the remaining automatic upload budget", () => {
