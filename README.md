@@ -141,4 +141,4 @@ InstructionsをKnowledge sourceへ移しても、作成者による信頼され�
 
 - `workplace/` は参照用 checkout や検証成果物のローカル作業領域です。`workplace/.gitkeep` だけを追跡します。
 - `bundle/`、`release-assets/`、`node_modules/`、ログ、ローカルの `.codex/skills/` は Git 管理外です。
-- `skills/igapyon-miku-ai-assistant-builder/index.json` は miku-indexgen の生成物です。スキル内容を変更したら再生成し、手編集しません。
+- Skill references are linked by task in `SKILL.md`; a generated root inventory is not required.

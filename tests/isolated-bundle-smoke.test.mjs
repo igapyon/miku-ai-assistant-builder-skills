@@ -16,7 +16,7 @@ test("bundle installs directly under the agent home skills directory", () => {
   try {
     fs.cpSync(sourceBundle, agentHome, { recursive: true });
     assert.equal(fs.existsSync(path.resolve(agentHome, "skills", skillName, "SKILL.md")), true);
-    assert.equal(fs.existsSync(path.resolve(agentHome, "skills", skillName, "index.json")), true);
+    assert.equal(fs.existsSync(path.resolve(agentHome, "skills", skillName, "index.json")), false);
     assert.equal(fs.existsSync(path.resolve(agentHome, "skills", "skills", skillName, "SKILL.md")), false);
     const runtimeRoot = path.resolve(agentHome, "skills", skillName, "runtime");
     const skillScriptRoot = path.resolve(agentHome, "skills", skillName, "scripts");

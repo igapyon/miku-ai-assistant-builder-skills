@@ -6,13 +6,8 @@
   "engines": {
     "node": ">=22"
   },
-  "mikuIndex": {
-    "path": "skills/igapyon-miku-ai-assistant-builder/index.json",
-    "required": true
-  },
   "scripts": {
-    "check:index": "node scripts/verify-miku-index.mjs",
-    "test": "npm run check:index && node --test tests/skill-structure.test.mjs tests/conversion-job.test.mjs tests/md2xlsx-runtime.test.mjs",
+    "test": "node --test tests/skill-structure.test.mjs tests/conversion-job.test.mjs tests/md2xlsx-runtime.test.mjs",
     "verify:bundle": "node --test tests/isolated-bundle-smoke.test.mjs tests/release-bundle-contents.test.mjs",
     "build": "npm test && npm run build:bundle:zip && npm run verify:bundle",
     "build:bundle": "node scripts/build-skill-bundle.mjs",

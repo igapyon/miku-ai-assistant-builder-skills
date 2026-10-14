@@ -33,7 +33,7 @@ description: ベータ版。Microsoft 365 Copilot内の軽量なAgent Builderま
 
 Gem Classicの場合は、Knowledge用Markdownを`markdown`のまま使うか`docx`へ変換するかも同じ方法で解決する。未解決または曖昧なら、その項目だけを質問する。
 
-開始確認が完了してから、同じディレクトリの `index.json` を読み、必要な参照資料を選ぶ。
+開始確認が完了してから、下記の参照リンクで必要な資料を選ぶ。リンクから見つからない場合は対象のサブディレクトリ内でファイル名または本文を検索する。
 
 ## Basic principle
 
