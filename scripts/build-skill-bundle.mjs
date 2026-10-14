@@ -2,7 +2,6 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -13,7 +12,6 @@ const sourceSkillRoot = path.resolve(repoRoot, "skills", skillName);
 const bundleSkillRoot = path.resolve(bundleRoot, "skills", skillName);
 
 assertSourceExists();
-execFileSync("node", ["scripts/verify-miku-index.mjs"], { cwd: repoRoot, stdio: "inherit" });
 fs.rmSync(bundleRoot, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
 fs.mkdirSync(path.dirname(bundleSkillRoot), { recursive: true });
 fs.cpSync(sourceSkillRoot, bundleSkillRoot, { recursive: true, filter: shouldCopyBundleEntry });

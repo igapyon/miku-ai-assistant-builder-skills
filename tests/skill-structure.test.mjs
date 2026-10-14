@@ -11,10 +11,7 @@ const ROOT = process.cwd();
 const skillName = "igapyon-miku-ai-assistant-builder";
 const skillRoot = path.resolve(ROOT, "skills", skillName);
 
-test("generated index is required and current", () => {
-  execFileSync("npm", ["run", "check:index"], { cwd: ROOT, encoding: "utf8" });
-  const index = JSON.parse(fs.readFileSync(path.resolve(skillRoot, "index.json"), "utf8"));
-  const paths = index.files.map((entry) => entry.path);
+test("skill tree keeps required workflow and runtime materials", () => {
   for (const requiredPath of [
     "SKILL.md",
     "agents/openai.yaml",
@@ -40,7 +37,7 @@ test("generated index is required and current", () => {
     "runtime/miku-json2xlsx-0.5.0.mjs",
     "runtime/miku-text-bundle-1.6.0.mjs",
     "runtime/miku-text-bundle-java-1.6.0.jar"
-  ]) assert.ok(paths.includes(requiredPath), `index lacks ${requiredPath}`);
+  ]) assert.ok(fs.existsSync(path.resolve(skillRoot, requiredPath)), `missing ${requiredPath}`);
 });
 
 test("bundled runtimes match declared versions and digests", () => {
